@@ -1,11 +1,15 @@
-// web/src/routes/+page.server.ts
-import { getAllStops } from '$lib/api';
+import { getAllStops, getPositions, getAlerts } from '$lib/api';
 
 export async function load() {
-	try {
-		const stops = await getAllStops();
-		return { stops: Array.isArray(stops) ? stops : [] };
-	} catch {
-		return { stops: [] };
-	}
+	const [stops, positions, alerts] = await Promise.all([
+		getAllStops().catch(() => []),
+		getPositions().catch(() => []),
+		getAlerts().catch(() => [])
+	]);
+
+	return {
+		stops: Array.isArray(stops) ? stops : [],
+		positions: Array.isArray(positions) ? positions : [],
+		alerts: Array.isArray(alerts) ? alerts : []
+	};
 }
