@@ -8,7 +8,7 @@ import (
 
 	"github.com/jamespfennell/gtfs"
 
-	"github.com/teclara/gopulse/api/internal/models"
+	"github.com/teclara/sixrail/api/internal/models"
 )
 
 // RouteLookup is satisfied by StaticStore.

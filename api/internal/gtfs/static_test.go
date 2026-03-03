@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"testing"
 
-	gtfsstore "github.com/teclara/gopulse/api/internal/gtfs"
+	gtfsstore "github.com/teclara/sixrail/api/internal/gtfs"
 )
 
 // buildTestZip creates a minimal GTFS zip with stops.txt, routes.txt,

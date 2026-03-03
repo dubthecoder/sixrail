@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/teclara/gopulse/api/internal/cache"
-	gtfsstore "github.com/teclara/gopulse/api/internal/gtfs"
-	"github.com/teclara/gopulse/api/internal/handlers"
-	"github.com/teclara/gopulse/api/internal/models"
+	"github.com/teclara/sixrail/api/internal/cache"
+	gtfsstore "github.com/teclara/sixrail/api/internal/gtfs"
+	"github.com/teclara/sixrail/api/internal/handlers"
+	"github.com/teclara/sixrail/api/internal/models"
 )
 
 type mockFetcher struct {

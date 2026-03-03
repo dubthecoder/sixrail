@@ -1,4 +1,4 @@
-module github.com/teclara/gopulse/api
+module github.com/teclara/sixrail/api
 
 go 1.22.5
 

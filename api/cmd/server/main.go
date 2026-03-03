@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/teclara/gopulse/api/internal/cache"
-	"github.com/teclara/gopulse/api/internal/config"
-	gtfsstore "github.com/teclara/gopulse/api/internal/gtfs"
-	"github.com/teclara/gopulse/api/internal/handlers"
-	"github.com/teclara/gopulse/api/internal/metrolinx"
+	"github.com/teclara/sixrail/api/internal/cache"
+	"github.com/teclara/sixrail/api/internal/config"
+	gtfsstore "github.com/teclara/sixrail/api/internal/gtfs"
+	"github.com/teclara/sixrail/api/internal/handlers"
+	"github.com/teclara/sixrail/api/internal/metrolinx"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/teclara/gopulse/api/internal/cache"
+	"github.com/teclara/sixrail/api/internal/cache"
 )
 
 func TestCache_SetAndGet(t *testing.T) {

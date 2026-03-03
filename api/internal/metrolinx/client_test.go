@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/teclara/gopulse/api/internal/metrolinx"
+	"github.com/teclara/sixrail/api/internal/metrolinx"
 )
 
 func TestClient_Fetch(t *testing.T) {
