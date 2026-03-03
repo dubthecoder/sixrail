@@ -27,6 +27,7 @@
 	let mapReady = $state(false);
 
 	let selectedStop = $state<Stop | null>(null);
+	let mapError = $state<string | null>(null);
 
 	function selectStation(stop: Stop) {
 		selectedStop = stop;
@@ -64,17 +65,23 @@
 		let alertInterval: ReturnType<typeof setInterval>;
 
 		(async () => {
-			mapboxgl = (await import('mapbox-gl')).default;
-			mapboxgl.accessToken = env.PUBLIC_MAPBOX_TOKEN || '';
+			try {
+				mapboxgl = (await import('mapbox-gl')).default;
+				mapboxgl.accessToken = env.PUBLIC_MAPBOX_TOKEN || '';
 
-			map = new mapboxgl.Map({
-				container: mapContainer,
-				style: 'mapbox://styles/mapbox/light-v11',
-				center: [-79.38, 43.65],
-				zoom: 9
-			});
+				map = new mapboxgl.Map({
+					container: mapContainer,
+					style: 'mapbox://styles/mapbox/light-v11',
+					center: [-79.38, 43.65],
+					zoom: 9
+				});
 
-			map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+				map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+			} catch (e: any) {
+				mapError = e?.message || String(e);
+				console.error('Map init error:', e);
+				return;
+			}
 
 			map.on('load', () => {
 				// Station markers
@@ -200,6 +207,15 @@
 
 	<SearchOverlay {stops} onstationselect={selectStation} />
 	<AlertsDropdown {alerts} />
+
+	{#if mapError}
+		<div class="absolute inset-0 z-30 flex items-center justify-center bg-white/80">
+			<div class="bg-red-50 border border-red-500 rounded-lg p-4 max-w-md text-red-900 text-sm">
+				<p class="font-bold">Map failed to load</p>
+				<p class="mt-1">{mapError}</p>
+			</div>
+		</div>
+	{/if}
 
 	{#if selectedStop}
 		<DeparturesPanel
