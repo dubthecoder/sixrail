@@ -24,6 +24,7 @@ type VehiclePosition struct {
 	RouteID    string  `json:"routeId"`
 	RouteName  string  `json:"routeName"`
 	RouteColor string  `json:"routeColor"`
+	RouteType  int     `json:"routeType"`
 	Lat        float64 `json:"lat"`
 	Lon        float64 `json:"lon"`
 	Bearing    float32 `json:"bearing,omitempty"`
