@@ -44,9 +44,17 @@ func main() {
 		gtfsstore.StartSimulatedPositionPoller(ctx, static, rtCache, 10*time.Second)
 	} else {
 		client := metrolinx.NewClient(cfg.MetrolinxBaseURL, cfg.MetrolinxAPIKey)
-		gtfsstore.StartPositionPoller(ctx, client, static, rtCache, 10*time.Second)
-		gtfsstore.StartAlertPoller(ctx, client, static, rtCache, 30*time.Second)
-		gtfsstore.StartTripUpdatePoller(ctx, client, rtCache, 30*time.Second)
+		// Validate API key with a test request before starting pollers
+		_, err := client.Fetch(ctx, "/Gtfs/Feed/VehiclePosition")
+		if err != nil {
+			slog.Warn("Metrolinx API key validation failed, falling back to simulated positions", "error", err)
+			gtfsstore.StartSimulatedPositionPoller(ctx, static, rtCache, 10*time.Second)
+		} else {
+			slog.Info("Metrolinx API key validated, starting real-time pollers")
+			gtfsstore.StartPositionPoller(ctx, client, static, rtCache, 10*time.Second)
+			gtfsstore.StartAlertPoller(ctx, client, static, rtCache, 30*time.Second)
+			gtfsstore.StartTripUpdatePoller(ctx, client, rtCache, 30*time.Second)
+		}
 	}
 
 	h := handlers.New(static, rtCache)
