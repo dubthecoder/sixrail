@@ -280,23 +280,31 @@ func (s *StaticStore) ActiveSimTrips(now time.Time) []SimTrip {
 }
 
 func serviceActive(svc *gtfs.Service, date time.Time) bool {
+	// Compare calendar dates only (year, month, day) to avoid timezone instant mismatches.
+	// GTFS dates from the parser may be in UTC while our date is in America/Toronto.
+	y, m, d := date.Date()
+
 	// Check added/removed exception dates first.
-	dateOnly := truncateToDay(date)
-	for _, d := range svc.RemovedDates {
-		if truncateToDay(d) == dateOnly {
+	for _, removed := range svc.RemovedDates {
+		ry, rm, rd := removed.Date()
+		if y == ry && m == rm && d == rd {
 			return false
 		}
 	}
-	for _, d := range svc.AddedDates {
-		if truncateToDay(d) == dateOnly {
+	for _, added := range svc.AddedDates {
+		ay, am, ad := added.Date()
+		if y == ay && m == am && d == ad {
 			return true
 		}
 	}
 
-	// Check date range.
-	start := truncateToDay(svc.StartDate)
-	end := truncateToDay(svc.EndDate)
-	if dateOnly.Before(start) || dateOnly.After(end) {
+	// Check date range using calendar dates, not instants.
+	sy, sm, sd := svc.StartDate.Date()
+	ey, em, ed := svc.EndDate.Date()
+	startVal := sy*10000 + int(sm)*100 + sd
+	endVal := ey*10000 + int(em)*100 + ed
+	dateVal := y*10000 + int(m)*100 + d
+	if dateVal < startVal || dateVal > endVal {
 		return false
 	}
 
