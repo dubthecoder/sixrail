@@ -52,6 +52,17 @@ export interface Alert {
 	endTime?: number;
 }
 
+export interface RouteShape {
+	routeId: string;
+	routeName: string;
+	color: string;
+	points: [number, number][]; // [lon, lat]
+}
+
+export function getRouteShapes() {
+	return fetchApi<RouteShape[]>('/api/shapes');
+}
+
 export function getAllStops() {
 	return fetchApi<Stop[]>('/api/stops');
 }

@@ -72,6 +72,15 @@ func (h *Handlers) Alerts(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, alerts)
 }
 
+// RouteShapes serves rail route shapes from GTFS static data.
+func (h *Handlers) RouteShapes(w http.ResponseWriter, r *http.Request) {
+	shapes := h.static.RouteShapes()
+	if shapes == nil {
+		shapes = []models.RouteShape{}
+	}
+	respondJSON(w, shapes)
+}
+
 // StopDepartures returns GTFS-based departures for a stop code.
 func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 	stopCode := r.PathValue("stopCode")

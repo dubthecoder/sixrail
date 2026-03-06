@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { env } from '$env/dynamic/public';
-	import type { Stop, VehiclePosition, Alert } from '$lib/api';
+	import type { Stop, VehiclePosition, Alert, RouteShape } from '$lib/api';
 	import { fetchPositions, fetchAlerts } from '$lib/api-client';
 	import { defaultStation } from '$lib/stores/favorites';
 	import SearchOverlay from '$lib/components/SearchOverlay.svelte';
@@ -14,6 +14,7 @@
 	let { data } = $props();
 
 	let stops = $derived<Stop[]>(data.stops);
+	let shapes = $derived<RouteShape[]>(data.shapes);
 	let positions = $state<VehiclePosition[]>([]);
 	let alerts = $state<Alert[]>([]);
 
@@ -112,6 +113,51 @@
 			}
 
 			map.on('load', () => {
+				// Rail route lines
+				map.addSource('route-lines', {
+					type: 'geojson',
+					data: {
+						type: 'FeatureCollection',
+						features: shapes
+							.filter((s) => s.points.length >= 2)
+							.map((s) => ({
+								type: 'Feature',
+								geometry: {
+									type: 'LineString',
+									coordinates: s.points
+								},
+								properties: {
+									routeName: s.routeName,
+									color: s.color ? `#${s.color}` : '#15803d'
+								}
+							}))
+					}
+				});
+
+				map.addLayer({
+					id: 'route-lines-outline',
+					type: 'line',
+					source: 'route-lines',
+					layout: { 'line-join': 'round', 'line-cap': 'round' },
+					paint: {
+						'line-color': '#ffffff',
+						'line-width': 5,
+						'line-opacity': 0.6
+					}
+				});
+
+				map.addLayer({
+					id: 'route-lines-layer',
+					type: 'line',
+					source: 'route-lines',
+					layout: { 'line-join': 'round', 'line-cap': 'round' },
+					paint: {
+						'line-color': ['get', 'color'],
+						'line-width': 3,
+						'line-opacity': 0.8
+					}
+				});
+
 				// Station markers
 				map.addSource('stops', {
 					type: 'geojson',

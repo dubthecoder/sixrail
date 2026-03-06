@@ -42,6 +42,13 @@ type Departure struct {
 	DelayMinutes  int    `json:"delayMinutes,omitempty"`
 }
 
+type RouteShape struct {
+	RouteID   string      `json:"routeId"`
+	RouteName string      `json:"routeName"`
+	Color     string      `json:"color"`
+	Points    [][2]float64 `json:"points"` // [lon, lat] pairs
+}
+
 type Alert struct {
 	ID          string   `json:"id"`
 	Effect      string   `json:"effect"`

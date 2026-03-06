@@ -38,13 +38,14 @@ type SimTrip struct {
 }
 
 type StaticStore struct {
-	mu        sync.RWMutex
-	stops     []models.Stop
-	routes    map[string]models.Route
-	stopIndex map[string][]ScheduledDeparture // stopID → sorted departures
-	stopCodes map[string][]string             // stopCode → []stopID (parent + children)
-	services  map[string]*gtfs.Service        // serviceID → service
-	tripIndex map[string]SimTrip              // tripID → SimTrip
+	mu          sync.RWMutex
+	stops       []models.Stop
+	routes      map[string]models.Route
+	routeShapes []models.RouteShape            // one shape per rail route
+	stopIndex   map[string][]ScheduledDeparture // stopID → sorted departures
+	stopCodes   map[string][]string             // stopCode → []stopID (parent + children)
+	services    map[string]*gtfs.Service        // serviceID → service
+	tripIndex   map[string]SimTrip              // tripID → SimTrip
 }
 
 func NewStaticStore(zipData []byte) (*StaticStore, error) {
@@ -179,9 +180,46 @@ func (s *StaticStore) load(zipData []byte) error {
 		}
 	}
 
+	// --- Route shapes: pick the longest shape per rail route ---
+	// routeID → longest shape's points
+	type shapeCandidate struct {
+		points [][2]float64
+	}
+	bestShapes := make(map[string]shapeCandidate)
+	for i := range static.Trips {
+		trip := &static.Trips[i]
+		if trip.Route == nil || trip.Shape == nil {
+			continue
+		}
+		// Only rail routes (type 2) and light rail (type 0)
+		rt := int(trip.Route.Type)
+		if rt != 0 && rt != 2 {
+			continue
+		}
+		if len(trip.Shape.Points) <= len(bestShapes[trip.Route.Id].points) {
+			continue
+		}
+		pts := make([][2]float64, len(trip.Shape.Points))
+		for j, sp := range trip.Shape.Points {
+			pts[j] = [2]float64{sp.Longitude, sp.Latitude}
+		}
+		bestShapes[trip.Route.Id] = shapeCandidate{points: pts}
+	}
+	routeShapes := make([]models.RouteShape, 0, len(bestShapes))
+	for rid, sc := range bestShapes {
+		r := routes[rid]
+		routeShapes = append(routeShapes, models.RouteShape{
+			RouteID:   rid,
+			RouteName: r.LongName,
+			Color:     r.Color,
+			Points:    sc.points,
+		})
+	}
+
 	s.mu.Lock()
 	s.stops = stops
 	s.routes = routes
+	s.routeShapes = routeShapes
 	s.stopIndex = stopIndex
 	s.stopCodes = stopCodes
 	s.services = services
@@ -215,6 +253,14 @@ func (s *StaticStore) AllStops() []models.Stop {
 	defer s.mu.RUnlock()
 	out := make([]models.Stop, len(s.stops))
 	copy(out, s.stops)
+	return out
+}
+
+func (s *StaticStore) RouteShapes() []models.RouteShape {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]models.RouteShape, len(s.routeShapes))
+	copy(out, s.routeShapes)
 	return out
 }
 
