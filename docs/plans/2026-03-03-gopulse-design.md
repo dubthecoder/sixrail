@@ -1,7 +1,7 @@
 # GoPulse Design Document
 
 **Date**: 2026-03-03
-**Status**: Approved
+**Status**: Completed (superseded by Six Rail migration)
 
 ## Overview
 
