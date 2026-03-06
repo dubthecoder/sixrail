@@ -63,6 +63,32 @@ export function getRouteShapes() {
 	return fetchApi<RouteShape[]>('/api/shapes');
 }
 
+export interface UpcomingStop {
+	name: string;
+	platform?: string;
+	time: string;
+	delayMinutes: number;
+}
+
+export interface TripDetail {
+	tripId: string;
+	vehicleId: string;
+	routeName: string;
+	routeColor: string;
+	origin: string;
+	destination: string;
+	scheduleStart: string;
+	scheduleEnd: string;
+	status: string;
+	delayMinutes: number;
+	currentStop?: string;
+	upcomingStops: UpcomingStop[];
+}
+
+export function getTripDetail(tripId: string) {
+	return fetchApi<TripDetail>(`/api/trip/${tripId}`);
+}
+
 export function getAllStops() {
 	return fetchApi<Stop[]>('/api/stops');
 }

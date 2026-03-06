@@ -3,7 +3,8 @@
 	import { browser } from '$app/environment';
 	import { env } from '$env/dynamic/public';
 	import type { Stop, VehiclePosition, Alert, RouteShape } from '$lib/api';
-	import { fetchPositions, fetchAlerts } from '$lib/api-client';
+	import { fetchPositions, fetchAlerts, fetchTripDetail } from '$lib/api-client';
+	import type { TripDetail } from '$lib/api';
 	import { defaultStation } from '$lib/stores/favorites';
 	import SearchOverlay from '$lib/components/SearchOverlay.svelte';
 	import AlertsDropdown from '$lib/components/AlertsDropdown.svelte';
@@ -83,7 +84,8 @@
 				properties: {
 					routeName: p.routeName || p.routeId || '',
 					tripId: p.tripId || '',
-					color: p.routeColor ? `#${p.routeColor}` : '#15803d'
+					color: p.routeColor ? `#${p.routeColor}` : '#15803d',
+					routeType: p.routeType
 				}
 			}))
 		});
@@ -185,6 +187,18 @@
 					}
 				});
 
+				// Vehicle position icons
+				const trainSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="white" stroke="white" stroke-width="2"/><path d="M8 18l-2 3h12l-2-3M6 13V6a4 4 0 014-4h4a4 4 0 014 4v7M6 13h12M6 13l-1 2h14l-1-2" fill="none" stroke="%23374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="16" r="1" fill="%23374151"/><circle cx="15" cy="16" r="1" fill="%23374151"/><line x1="9" y1="6" x2="15" y2="6" stroke="%23374151" stroke-width="1.5"/><line x1="9" y1="9" x2="15" y2="9" stroke="%23374151" stroke-width="1.5"/></svg>`;
+				const busSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="white" stroke="white" stroke-width="2"/><path d="M5 15V7a4 4 0 014-4h6a4 4 0 014 4v8M5 15l-1 2h16l-1-2M5 15h14" fill="none" stroke="%233b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="17.5" r="1" fill="%233b82f6"/><circle cx="16" cy="17.5" r="1" fill="%233b82f6"/><rect x="6" y="5" width="12" height="5" rx="1" fill="none" stroke="%233b82f6" stroke-width="1.5"/></svg>`;
+
+				const trainImg = new Image(24, 24);
+				trainImg.onload = () => map.addImage('train-icon', trainImg);
+				trainImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(trainSvg);
+
+				const busImg = new Image(24, 24);
+				busImg.onload = () => map.addImage('bus-icon', busImg);
+				busImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(busSvg);
+
 				// Vehicle positions
 				map.addSource('positions', {
 					type: 'geojson',
@@ -193,13 +207,13 @@
 
 				map.addLayer({
 					id: 'positions-layer',
-					type: 'circle',
+					type: 'symbol',
 					source: 'positions',
-					paint: {
-						'circle-radius': 5,
-						'circle-color': ['get', 'color'],
-						'circle-stroke-width': 1.5,
-						'circle-stroke-color': '#ffffff'
+					layout: {
+						'icon-image': ['case', ['==', ['get', 'routeType'], 3], 'bus-icon', 'train-icon'],
+						'icon-size': 0.9,
+						'icon-allow-overlap': true,
+						'icon-ignore-placement': true
 					}
 				});
 
@@ -221,16 +235,73 @@
 					});
 				});
 
-				// Vehicle click handler
-				map.on('click', 'positions-layer', (e: any) => {
+				// Vehicle click handler — rich popup with trip detail
+				map.on('click', 'positions-layer', async (e: any) => {
 					const feature = e.features?.[0];
 					if (!feature) return;
 					const props = feature.properties;
 					const [lon, lat] = feature.geometry.coordinates;
-					new mapboxgl.Popup()
+
+					const popup = new mapboxgl.Popup({ maxWidth: '320px', className: 'train-popup' })
 						.setLngLat([lon, lat])
-						.setHTML(`<strong>${props.routeName || '—'}</strong><br/>Trip: ${props.tripId || '—'}`)
+						.setHTML(`<div class="p-3 text-center text-gray-400 text-sm">Loading...</div>`)
 						.addTo(map);
+
+					const detail: TripDetail | null = await fetchTripDetail(props.tripId);
+					if (!detail) {
+						popup.setHTML(`<div class="p-3"><strong>${props.routeName || '—'}</strong></div>`);
+						return;
+					}
+
+					const color = detail.routeColor ? `#${detail.routeColor}` : '#15803d';
+					const statusBadge =
+						detail.delayMinutes > 0
+							? `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium" style="background:#fef2f2;color:#b91c1c">Delayed ${detail.delayMinutes}m</span>`
+							: detail.status === 'Cancelled'
+								? `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium" style="background:#fef2f2;color:#b91c1c">Cancelled</span>`
+								: `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium" style="background:#f0fdf4;color:#15803d">On Time</span>`;
+
+					let stopsHTML = '';
+					if (detail.upcomingStops.length > 0) {
+						const stopRows = detail.upcomingStops
+							.map((s) => {
+								const delay =
+									s.delayMinutes > 0
+										? `<span style="color:#ef4444;font-size:10px">(+${s.delayMinutes}m)</span>`
+										: '';
+								return `<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:12px">
+								<div style="display:flex;align-items:center;gap:6px">
+									<div style="width:6px;height:6px;border-radius:50%;background:#d1d5db;flex-shrink:0"></div>
+									<span style="color:#374151">${s.name}</span>
+								</div>
+								<div style="flex-shrink:0;margin-left:8px;color:#6b7280">${s.time} ${delay}</div>
+							</div>`;
+							})
+							.join('');
+						stopsHTML = `<div style="border-top:1px solid #f3f4f6;padding:8px 12px">
+						<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;font-weight:600;margin-bottom:6px">Upcoming Stops (${detail.upcomingStops.length})</div>
+						<div style="max-height:160px;overflow-y:auto">${stopRows}</div>
+					</div>`;
+					}
+
+					popup.setHTML(`
+					<div style="min-width:260px;max-width:320px">
+						<div style="padding:12px 12px 8px">
+							<div style="display:flex;align-items:center;gap:8px">
+								<div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
+								<span style="font-weight:700;font-size:14px;color:#111827">${detail.routeName}</span>
+							</div>
+							<div style="font-size:12px;color:#6b7280;margin-top:2px">#${detail.vehicleId}</div>
+							${statusBadge}
+						</div>
+						<div style="border-top:1px solid #f3f4f6;padding:8px 12px;font-size:12px">
+							${detail.origin && detail.destination ? `<div style="color:#374151"><strong>${detail.origin}</strong> <span style="color:#9ca3af">→</span> <strong>${detail.destination}</strong></div>` : ''}
+							${detail.scheduleStart && detail.scheduleEnd ? `<div style="color:#6b7280;margin-top:4px">Schedule: ${detail.scheduleStart} – ${detail.scheduleEnd}</div>` : ''}
+							${detail.currentStop ? `<div style="color:#6b7280;margin-top:4px">Next: <span style="color:#374151">${detail.currentStop}</span></div>` : ''}
+						</div>
+						${stopsHTML}
+					</div>
+				`);
 				});
 
 				// Cursor changes

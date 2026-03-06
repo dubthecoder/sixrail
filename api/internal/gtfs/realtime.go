@@ -34,10 +34,12 @@ type gtfsRTEntity struct {
 }
 
 type gtfsRTVehicle struct {
-	Trip      gtfsRTTrip     `json:"trip"`
-	Vehicle   gtfsRTVehID    `json:"vehicle"`
-	Position  *gtfsRTPos     `json:"position"`
-	Timestamp int64          `json:"timestamp"`
+	Trip          gtfsRTTrip     `json:"trip"`
+	Vehicle       gtfsRTVehID    `json:"vehicle"`
+	Position      *gtfsRTPos     `json:"position"`
+	StopID        string         `json:"stop_id"`
+	CurrentStatus string         `json:"current_status"`
+	Timestamp     int64          `json:"timestamp"`
 }
 
 type gtfsRTTrip struct {
@@ -105,14 +107,16 @@ type gtfsRTDelay struct {
 
 // RawPosition holds pre-enrichment vehicle position data.
 type RawPosition struct {
-	VehicleID string
-	TripID    string
-	RouteID   string
-	Lat       float64
-	Lon       float64
-	Bearing   float32
-	Speed     float32
-	Timestamp int64
+	VehicleID     string
+	TripID        string
+	RouteID       string
+	Lat           float64
+	Lon           float64
+	Bearing       float32
+	Speed         float32
+	Timestamp     int64
+	CurrentStatus string
+	NextStopID    string
 }
 
 // RawAlert holds pre-enrichment alert data.
@@ -214,14 +218,16 @@ func ParsePositions(data []byte) ([]RawPosition, error) {
 		}
 		v := e.Vehicle
 		positions = append(positions, RawPosition{
-			VehicleID: v.Vehicle.ID,
-			TripID:    v.Trip.TripID,
-			RouteID:   v.Trip.RouteID,
-			Lat:       v.Position.Latitude,
-			Lon:       v.Position.Longitude,
-			Bearing:   v.Position.Bearing,
-			Speed:     v.Position.Speed,
-			Timestamp: v.Timestamp,
+			VehicleID:     v.Vehicle.ID,
+			TripID:        v.Trip.TripID,
+			RouteID:       v.Trip.RouteID,
+			Lat:           v.Position.Latitude,
+			Lon:           v.Position.Longitude,
+			Bearing:       v.Position.Bearing,
+			Speed:         v.Position.Speed,
+			Timestamp:     v.Timestamp,
+			CurrentStatus: v.CurrentStatus,
+			NextStopID:    v.StopID,
 		})
 	}
 	return positions, nil
@@ -344,14 +350,16 @@ func EnrichPositions(raw []RawPosition, lookup RouteLookup) []models.VehiclePosi
 	out := make([]models.VehiclePosition, len(raw))
 	for i, rp := range raw {
 		vp := models.VehiclePosition{
-			VehicleID: rp.VehicleID,
-			TripID:    rp.TripID,
-			RouteID:   rp.RouteID,
-			Lat:       rp.Lat,
-			Lon:       rp.Lon,
-			Bearing:   rp.Bearing,
-			Speed:     rp.Speed,
-			Timestamp: rp.Timestamp,
+			VehicleID:     rp.VehicleID,
+			TripID:        rp.TripID,
+			RouteID:       rp.RouteID,
+			Lat:           rp.Lat,
+			Lon:           rp.Lon,
+			Bearing:       rp.Bearing,
+			Speed:         rp.Speed,
+			Timestamp:     rp.Timestamp,
+			CurrentStatus: rp.CurrentStatus,
+			NextStopID:    rp.NextStopID,
 		}
 		if route, ok := lookup.GetRoute(rp.RouteID); ok {
 			vp.RouteName = route.LongName

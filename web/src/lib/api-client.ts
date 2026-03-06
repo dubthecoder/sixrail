@@ -19,6 +19,15 @@ export async function fetchAlerts(): Promise<Alert[]> {
 	return res.json();
 }
 
+export type { TripDetail, UpcomingStop } from './api';
+import type { TripDetail } from './api';
+
+export async function fetchTripDetail(tripId: string): Promise<TripDetail | null> {
+	const res = await fetch(`/api/trip/${encodeURIComponent(tripId)}`);
+	if (!res.ok) return null;
+	return res.json();
+}
+
 export type Departure = {
 	line: string;
 	destination: string;

@@ -19,17 +19,19 @@ type Route struct {
 }
 
 type VehiclePosition struct {
-	VehicleID  string  `json:"vehicleId"`
-	TripID     string  `json:"tripId"`
-	RouteID    string  `json:"routeId"`
-	RouteName  string  `json:"routeName"`
-	RouteColor string  `json:"routeColor"`
-	RouteType  int     `json:"routeType"`
-	Lat        float64 `json:"lat"`
-	Lon        float64 `json:"lon"`
-	Bearing    float32 `json:"bearing,omitempty"`
-	Speed      float32 `json:"speed,omitempty"`
-	Timestamp  int64   `json:"timestamp"`
+	VehicleID     string  `json:"vehicleId"`
+	TripID        string  `json:"tripId"`
+	RouteID       string  `json:"routeId"`
+	RouteName     string  `json:"routeName"`
+	RouteColor    string  `json:"routeColor"`
+	RouteType     int     `json:"routeType"`
+	Lat           float64 `json:"lat"`
+	Lon           float64 `json:"lon"`
+	Bearing       float32 `json:"bearing,omitempty"`
+	Speed         float32 `json:"speed,omitempty"`
+	Timestamp     int64   `json:"timestamp"`
+	CurrentStatus string  `json:"currentStatus,omitempty"`
+	NextStopID    string  `json:"nextStopId,omitempty"`
 }
 
 type Departure struct {
@@ -47,6 +49,28 @@ type RouteShape struct {
 	RouteName string      `json:"routeName"`
 	Color     string      `json:"color"`
 	Points    [][2]float64 `json:"points"` // [lon, lat] pairs
+}
+
+type TripDetail struct {
+	TripID        string           `json:"tripId"`
+	VehicleID     string           `json:"vehicleId"`
+	RouteName     string           `json:"routeName"`
+	RouteColor    string           `json:"routeColor"`
+	Origin        string           `json:"origin"`
+	Destination   string           `json:"destination"`
+	ScheduleStart string           `json:"scheduleStart"` // "HH:MM"
+	ScheduleEnd   string           `json:"scheduleEnd"`   // "HH:MM"
+	Status        string           `json:"status"`        // "On Time", "Delayed +3m", "Cancelled"
+	DelayMinutes  int              `json:"delayMinutes"`
+	CurrentStop   string           `json:"currentStop,omitempty"`
+	UpcomingStops []UpcomingStop   `json:"upcomingStops"`
+}
+
+type UpcomingStop struct {
+	Name         string `json:"name"`
+	Platform     string `json:"platform,omitempty"`
+	Time         string `json:"time"`         // "4:27 p.m."
+	DelayMinutes int    `json:"delayMinutes"`
 }
 
 type Alert struct {

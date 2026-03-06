@@ -48,6 +48,7 @@ type SimTrip struct {
 type StaticStore struct {
 	mu          sync.RWMutex
 	stops       []models.Stop
+	stopNames   map[string]string // stopID → name
 	routes      map[string]models.Route
 	routeShapes []models.RouteShape            // one shape per rail route
 	stopIndex   map[string][]ScheduledDeparture // stopID → sorted departures
@@ -72,8 +73,10 @@ func (s *StaticStore) load(zipData []byte) error {
 
 	// --- Stops ---
 	stops := make([]models.Stop, 0, len(static.Stops))
+	stopNames := make(map[string]string, len(static.Stops))
 	for i := range static.Stops {
 		gs := &static.Stops[i]
+		stopNames[gs.Id] = gs.Name
 		if gs.Latitude == nil || gs.Longitude == nil {
 			continue
 		}
@@ -239,6 +242,7 @@ func (s *StaticStore) load(zipData []byte) error {
 
 	s.mu.Lock()
 	s.stops = stops
+	s.stopNames = stopNames
 	s.routes = routes
 	s.routeShapes = routeShapes
 	s.stopIndex = stopIndex
@@ -283,6 +287,19 @@ func (s *StaticStore) RouteShapes() []models.RouteShape {
 	out := make([]models.RouteShape, len(s.routeShapes))
 	copy(out, s.routeShapes)
 	return out
+}
+
+func (s *StaticStore) GetStopName(id string) string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.stopNames[id]
+}
+
+func (s *StaticStore) GetSimTrip(tripID string) (SimTrip, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	t, ok := s.tripIndex[tripID]
+	return t, ok
 }
 
 func (s *StaticStore) GetRoute(id string) (models.Route, bool) {

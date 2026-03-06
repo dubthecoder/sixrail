@@ -67,6 +67,7 @@ func main() {
 	mux.HandleFunc("GET /api/stops", h.AllStops)
 	mux.HandleFunc("GET /api/departures/{stopCode}", h.StopDepartures)
 	mux.HandleFunc("GET /api/shapes", h.RouteShapes)
+	mux.HandleFunc("GET /api/trip/{tripId}", h.TripDetail)
 	mux.HandleFunc("GET /api/positions", h.Positions)
 	mux.HandleFunc("GET /api/alerts", h.Alerts)
 
