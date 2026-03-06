@@ -4,7 +4,7 @@ import { writable } from 'svelte/store';
 
 function createFavorites() {
 	const initial = browser ? JSON.parse(localStorage.getItem('favorites') || '[]') : [];
-	const { subscribe, set, update } = writable<string[]>(initial);
+	const { subscribe, update } = writable<string[]>(initial);
 
 	return {
 		subscribe,
