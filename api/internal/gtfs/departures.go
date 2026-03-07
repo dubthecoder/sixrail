@@ -82,15 +82,14 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 		return candidates[i].adjusted.Before(candidates[j].adjusted)
 	})
 
-	// Deduplicate by (tripID, adjusted time) — same trip can appear for parent + child stops.
+	// Deduplicate by tripID — same trip can appear for parent + child stops.
 	seen := make(map[string]bool)
 	result := make([]models.Departure, 0, maxDepartures)
 	for _, c := range candidates {
-		key := fmt.Sprintf("%s|%d", c.dep.TripID, c.adjusted.Unix())
-		if seen[key] {
+		if seen[c.dep.TripID] {
 			continue
 		}
-		seen[key] = true
+		seen[c.dep.TripID] = true
 
 		route, _ := static.GetRoute(c.dep.RouteID)
 		delay := c.adjusted.Sub(c.serviceDay.Add(c.dep.DepartureTime))
