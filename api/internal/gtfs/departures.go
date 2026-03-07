@@ -106,6 +106,7 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 
 		dep := models.Departure{
 			Line:          route.ShortName,
+			LineName:      route.LongName,
 			Destination:   c.dep.Headsign,
 			ScheduledTime: formatTime(c.serviceDay.Add(c.dep.DepartureTime)),
 			Status:        status,

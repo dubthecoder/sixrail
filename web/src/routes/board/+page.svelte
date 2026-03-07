@@ -194,7 +194,7 @@
 						</span>
 
 						<span class="col-line text-white">
-							{#each padRight(dep.line, 14).split('') as char, j}
+							{#each padRight(dep.lineName || dep.line, 14).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
 						</span>

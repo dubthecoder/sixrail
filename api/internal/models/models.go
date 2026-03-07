@@ -36,6 +36,7 @@ type VehiclePosition struct {
 
 type Departure struct {
 	Line          string   `json:"line"`
+	LineName      string   `json:"lineName,omitempty"`
 	Destination   string   `json:"destination"`
 	ScheduledTime string   `json:"scheduledTime"` // "HH:MM" local time
 	ArrivalTime   string   `json:"arrivalTime,omitempty"` // "HH:MM" arrival at destination stop

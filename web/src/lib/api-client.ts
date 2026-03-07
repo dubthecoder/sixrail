@@ -8,6 +8,7 @@ export async function fetchAlerts(): Promise<Alert[]> {
 
 export type Departure = {
 	line: string;
+	lineName?: string;
 	destination: string;
 	scheduledTime: string;
 	arrivalTime?: string;
