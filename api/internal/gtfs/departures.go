@@ -116,9 +116,11 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 			Stops:         static.RemainingStopNames(c.dep.TripID, stopIDs),
 		}
 		if len(destStopIDs) > 0 {
-			if arrDur, ok := static.ArrivalTimeAtStop(c.dep.TripID, destStopIDs); ok {
-				dep.ArrivalTime = formatTime(c.serviceDay.Add(arrDur))
+			arrDur, ok := static.ArrivalTimeAtStop(c.dep.TripID, destStopIDs)
+			if !ok {
+				continue // skip trips that don't stop at the destination
 			}
+			dep.ArrivalTime = formatTime(c.serviceDay.Add(arrDur))
 		}
 
 		// Enrich with service glance data (occupancy, car count).
