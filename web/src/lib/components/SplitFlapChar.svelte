@@ -33,12 +33,12 @@
 			current = getNextChar(current);
 			topValue = current;
 			isFlipping = true;
-			await new Promise((r) => setTimeout(r, 40));
+			await new Promise((r) => setTimeout(r, 25));
 			if (gen !== flipGeneration) return;
 			isFlipping = false;
 			bottomValue = current;
 			displayValue = current;
-			await new Promise((r) => setTimeout(r, 10));
+			await new Promise((r) => setTimeout(r, 5));
 		}
 	}
 
@@ -90,7 +90,7 @@
 	.tile.flipping {
 		top: 0;
 		height: 100%;
-		animation: flip 80ms linear forwards;
+		animation: flip 50ms linear forwards;
 		transform-origin: center;
 		background: #1e1e1e;
 		z-index: 2;

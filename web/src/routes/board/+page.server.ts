@@ -1,10 +1,12 @@
-import { getUnionDepartures } from '$lib/api';
+import { getUnionDepartures, getAllStops } from '$lib/api';
 
 export async function load() {
-	try {
-		const departures = await getUnionDepartures();
-		return { departures: departures ?? [] };
-	} catch {
-		return { departures: [] };
-	}
+	const [departures, stops] = await Promise.all([
+		getUnionDepartures().catch(() => []),
+		getAllStops().catch(() => [])
+	]);
+	return {
+		departures: Array.isArray(departures) ? departures : [],
+		stops: Array.isArray(stops) ? stops : []
+	};
 }

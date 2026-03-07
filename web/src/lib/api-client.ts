@@ -15,6 +15,7 @@ export type Departure = {
 	platform?: string;
 	routeColor?: string;
 	delayMinutes?: number;
+	stops?: string[];
 };
 
 export async function fetchDepartures(stopCode: string, destCode?: string): Promise<Departure[]> {
