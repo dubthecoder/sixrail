@@ -114,6 +114,16 @@
 		font-size: 1.1em;
 	}
 
+	.col-time,
+	.col-route,
+	.col-platform,
+	.col-status {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		overflow: hidden;
+	}
+
 	.col-time {
 		font-size: 0.95em;
 	}
