@@ -109,65 +109,6 @@ func TestRouteTypeZeroNotOmitted(t *testing.T) {
 	}
 }
 
-func TestVehiclePositionRoundTrip(t *testing.T) {
-	original := VehiclePosition{
-		VehicleID:  "V100",
-		TripID:     "T200",
-		RouteID:    "01",
-		RouteName:  "Lakeshore West",
-		RouteColor: "00853F",
-		Lat:        43.6453,
-		Lon:        -79.3806,
-		Bearing:    180.5,
-		Speed:      65.2,
-		Timestamp:  1709500000,
-	}
-
-	data, err := json.Marshal(original)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-
-	var decoded VehiclePosition
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-
-	if decoded != original {
-		t.Errorf("round-trip mismatch:\n got  %+v\n want %+v", decoded, original)
-	}
-}
-
-func TestVehiclePositionOmitEmptyBearingSpeed(t *testing.T) {
-	vp := VehiclePosition{
-		VehicleID:  "V100",
-		TripID:     "T200",
-		RouteID:    "01",
-		RouteName:  "Lakeshore West",
-		RouteColor: "00853F",
-		Lat:        43.6453,
-		Lon:        -79.3806,
-		Timestamp:  1709500000,
-	}
-
-	data, err := json.Marshal(vp)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-
-	var raw map[string]any
-	if err := json.Unmarshal(data, &raw); err != nil {
-		t.Fatalf("unmarshal to map: %v", err)
-	}
-
-	if _, exists := raw["bearing"]; exists {
-		t.Error("expected bearing to be omitted when zero")
-	}
-	if _, exists := raw["speed"]; exists {
-		t.Error("expected speed to be omitted when zero")
-	}
-}
-
 func TestAlertRoundTrip(t *testing.T) {
 	original := Alert{
 		ID:          "A001",
@@ -283,15 +224,3 @@ func TestStopFromJSON(t *testing.T) {
 	}
 }
 
-func TestVehiclePositionFromJSON(t *testing.T) {
-	input := `{"vehicleId":"V1","tripId":"T1","routeId":"01","routeName":"LW","routeColor":"00853F","lat":43.6,"lon":-79.3,"timestamp":1709500000}`
-
-	var vp VehiclePosition
-	if err := json.Unmarshal([]byte(input), &vp); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-
-	if vp.VehicleID != "V1" || vp.Bearing != 0 || vp.Speed != 0 {
-		t.Errorf("unexpected values: %+v", vp)
-	}
-}

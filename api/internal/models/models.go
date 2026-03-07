@@ -18,22 +18,6 @@ type Route struct {
 	Type      int    `json:"type"`
 }
 
-type VehiclePosition struct {
-	VehicleID     string  `json:"vehicleId"`
-	TripID        string  `json:"tripId"`
-	RouteID       string  `json:"routeId"`
-	RouteName     string  `json:"routeName"`
-	RouteColor    string  `json:"routeColor"`
-	RouteType     int     `json:"routeType"`
-	Lat           float64 `json:"lat"`
-	Lon           float64 `json:"lon"`
-	Bearing       float32 `json:"bearing,omitempty"`
-	Speed         float32 `json:"speed,omitempty"`
-	Timestamp     int64   `json:"timestamp"`
-	CurrentStatus string  `json:"currentStatus,omitempty"`
-	NextStopID    string  `json:"nextStopId,omitempty"`
-}
-
 type Departure struct {
 	Line          string   `json:"line"`
 	LineName      string   `json:"lineName,omitempty"`
@@ -50,46 +34,17 @@ type Departure struct {
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
 }
 
-type RouteShape struct {
-	RouteID   string      `json:"routeId"`
-	RouteName string      `json:"routeName"`
-	Color     string      `json:"color"`
-	Points    [][2]float64 `json:"points"` // [lon, lat] pairs
-}
-
-type TripDetail struct {
-	TripID        string           `json:"tripId"`
-	VehicleID     string           `json:"vehicleId"`
-	RouteName     string           `json:"routeName"`
-	RouteColor    string           `json:"routeColor"`
-	Origin        string           `json:"origin"`
-	Destination   string           `json:"destination"`
-	ScheduleStart string           `json:"scheduleStart"` // "HH:MM"
-	ScheduleEnd   string           `json:"scheduleEnd"`   // "HH:MM"
-	Status        string           `json:"status"`        // "On Time", "Delayed +3m", "Cancelled"
-	DelayMinutes  int              `json:"delayMinutes"`
-	CurrentStop   string           `json:"currentStop,omitempty"`
-	UpcomingStops []UpcomingStop   `json:"upcomingStops"`
-}
-
-type UpcomingStop struct {
-	Name         string `json:"name"`
-	Platform     string `json:"platform,omitempty"`
-	Time         string `json:"time"`         // "4:27 p.m."
-	DelayMinutes int    `json:"delayMinutes"`
-}
-
 // NextServiceLine is a single real-time next-service entry from Metrolinx NextService API.
 type NextServiceLine struct {
-	LineCode      string `json:"lineCode"`
-	LineName      string `json:"lineName"`
-	Direction     string `json:"direction"`
-	ScheduledTime string `json:"scheduledTime"` // "HH:MM"
-	ComputedTime  string `json:"computedTime"`  // "HH:MM" real-time adjusted
-	Platform      string `json:"platform,omitempty"`
+	LineCode       string `json:"lineCode"`
+	LineName       string `json:"lineName"`
+	Direction      string `json:"direction"`
+	ScheduledTime  string `json:"scheduledTime"` // "HH:MM"
+	ComputedTime   string `json:"computedTime"`  // "HH:MM" real-time adjusted
+	Platform       string `json:"platform,omitempty"`
 	ActualPlatform string `json:"actualPlatform,omitempty"`
-	TripNumber    string `json:"tripNumber"`
-	Status        string `json:"status"` // "On Time", "Delayed", "Moving"
+	TripNumber     string `json:"tripNumber"`
+	Status         string `json:"status"` // "On Time", "Delayed", "Moving"
 }
 
 // UnionDeparture is a single departure from the Union Station departures board.
@@ -119,11 +74,11 @@ type FareInfo struct {
 
 // ServiceGlanceEntry holds cached data from the ServiceataGlance/Trains/All endpoint.
 type ServiceGlanceEntry struct {
-	TripNumber  string
-	LineCode    string
-	LineName    string // Display field
-	Cars        string
-	Occupancy   int
+	TripNumber string
+	LineCode   string
+	LineName   string // Display field
+	Cars       string
+	Occupancy  int
 }
 
 type Alert struct {

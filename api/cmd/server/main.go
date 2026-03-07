@@ -41,23 +41,19 @@ func main() {
 	ctx := context.Background()
 	var mxClient *metrolinx.Client
 	if cfg.MetrolinxAPIKey == "" {
-		slog.Info("METROLINX_API_KEY not set — using simulated vehicle positions")
-		gtfsstore.StartSimulatedPositionPoller(ctx, static, rtCache, 10*time.Second)
+		slog.Info("METROLINX_API_KEY not set — real-time data unavailable")
 	} else {
 		mxClient = metrolinx.NewClient(cfg.MetrolinxBaseURL, cfg.MetrolinxAPIKey)
-		// Validate API key by fetching AND parsing a GTFS-RT feed
-		testData, err := mxClient.Fetch(ctx, "/Gtfs/Feed/VehiclePosition")
+		// Validate API key by fetching a GTFS-RT feed
+		testData, err := mxClient.Fetch(ctx, "/Gtfs/Feed/Alerts")
 		if err != nil {
-			slog.Warn("Metrolinx API fetch failed, falling back to simulated positions", "error", err)
-			gtfsstore.StartSimulatedPositionPoller(ctx, static, rtCache, 10*time.Second)
+			slog.Warn("Metrolinx API fetch failed, real-time data unavailable", "error", err)
 			mxClient = nil
-		} else if _, parseErr := gtfsstore.ParsePositions(testData); parseErr != nil {
-			slog.Warn("Metrolinx API returned invalid JSON, falling back to simulated positions", "error", parseErr)
-			gtfsstore.StartSimulatedPositionPoller(ctx, static, rtCache, 10*time.Second)
+		} else if _, parseErr := gtfsstore.ParseAlerts(testData); parseErr != nil {
+			slog.Warn("Metrolinx API returned invalid data, real-time data unavailable", "error", parseErr)
 			mxClient = nil
 		} else {
 			slog.Info("Metrolinx API key validated, starting real-time pollers")
-			gtfsstore.StartPositionPoller(ctx, mxClient, static, rtCache, 10*time.Second)
 			gtfsstore.StartAlertPoller(ctx, mxClient, static, rtCache, 30*time.Second)
 			gtfsstore.StartTripUpdatePoller(ctx, mxClient, rtCache, 30*time.Second)
 			gtfsstore.StartServiceGlancePoller(ctx, mxClient, rtCache, 30*time.Second)
@@ -72,9 +68,6 @@ func main() {
 	mux.HandleFunc("GET /api/stops", h.AllStops)
 	mux.HandleFunc("GET /api/departures/{stopCode}", h.StopDepartures)
 	mux.HandleFunc("GET /api/union-departures", h.UnionDepartures)
-	mux.HandleFunc("GET /api/shapes", h.RouteShapes)
-	mux.HandleFunc("GET /api/trip/{tripId}", h.TripDetail)
-	mux.HandleFunc("GET /api/positions", h.Positions)
 	mux.HandleFunc("GET /api/alerts", h.Alerts)
 	mux.HandleFunc("GET /api/network-health", h.NetworkHealth)
 	mux.HandleFunc("GET /api/fares/{from}/{to}", h.Fares)

@@ -20,41 +20,30 @@ type ScheduledDeparture struct {
 	DepartureTime time.Duration // duration from midnight (local time)
 }
 
-// TripStop is one stop in a trip's ordered sequence, used for position simulation.
+// TripStop is one stop in a trip's ordered sequence.
 type TripStop struct {
 	StopID        string
-	Lat           float64
-	Lon           float64
 	ArrivalTime   time.Duration // duration from midnight of service day
 	DepartureTime time.Duration
 }
 
-// ShapePoint is a [lat, lon] point along a trip's route geometry.
-type ShapePoint struct {
-	Lat float64
-	Lon float64
-}
-
-// SimTrip holds a trip's identity and full stop sequence for position simulation.
-type SimTrip struct {
+// TripInfo holds a trip's identity and full stop sequence for departure enrichment.
+type TripInfo struct {
 	TripID    string
 	RouteID   string
 	ServiceID string
 	Stops     []TripStop
-	Shape     []ShapePoint // route geometry; empty if no shape data
-	StopSnap  []int        // Shape index closest to each stop; len == len(Stops)
 }
 
 type StaticStore struct {
-	mu          sync.RWMutex
-	stops       []models.Stop
-	stopNames   map[string]string // stopID → name
-	routes      map[string]models.Route
-	routeShapes []models.RouteShape            // one shape per rail route
-	stopIndex   map[string][]ScheduledDeparture // stopID → sorted departures
-	stopCodes   map[string][]string             // stopCode → []stopID (parent + children)
-	services    map[string]*gtfs.Service        // serviceID → service
-	tripIndex   map[string]SimTrip              // tripID → SimTrip
+	mu        sync.RWMutex
+	stops     []models.Stop
+	stopNames map[string]string // stopID → name
+	routes    map[string]models.Route
+	stopIndex map[string][]ScheduledDeparture // stopID → sorted departures
+	stopCodes map[string][]string             // stopCode → []stopID (parent + children)
+	services  map[string]gtfs.Service         // serviceID → service
+	tripIndex map[string]TripInfo             // tripID → TripInfo
 }
 
 func NewStaticStore(zipData []byte) (*StaticStore, error) {
@@ -109,25 +98,21 @@ func (s *StaticStore) load(zipData []byte) error {
 	}
 
 	// --- Services (calendar) ---
-	services := make(map[string]*gtfs.Service, len(static.Services))
+	// Copy by value to avoid pinning the entire parsed gtfs.Static in memory.
+	services := make(map[string]gtfs.Service, len(static.Services))
 	for i := range static.Services {
-		svc := &static.Services[i]
-		services[svc.Id] = svc
+		services[static.Services[i].Id] = static.Services[i]
 	}
 
 	// --- Stop code → stop IDs mapping ---
-	// A stop code can correspond to a parent station plus child platforms.
 	stopCodes := make(map[string][]string)
 	for i := range static.Stops {
 		gs := &static.Stops[i]
-		// Use stop_code as the lookup key; fall back to stop_id for stations
-		// (e.g. GO train stations) that have no stop_code in the GTFS data.
 		key := gs.Code
 		if key == "" {
 			key = gs.Id
 		}
 		stopCodes[key] = append(stopCodes[key], gs.Id)
-		// Also index child stops under the parent's key.
 		if gs.Parent != nil {
 			parentKey := gs.Parent.Code
 			if parentKey == "" {
@@ -146,7 +131,6 @@ func (s *StaticStore) load(zipData []byte) error {
 		if trip.Route == nil || trip.Service == nil {
 			continue
 		}
-		// Use trip headsign; fall back to route long name.
 		headsign := trip.Headsign
 		if headsign == "" {
 			headsign = trip.Route.LongName
@@ -163,13 +147,12 @@ func (s *StaticStore) load(zipData []byte) error {
 				Headsign:      headsign,
 				DepartureTime: st.DepartureTime,
 			}
-			stopID := st.Stop.Id
-			stopIndex[stopID] = append(stopIndex[stopID], dep)
+			stopIndex[st.Stop.Id] = append(stopIndex[st.Stop.Id], dep)
 		}
 	}
 
-	// --- Trip index for position simulation ---
-	tripIndex := make(map[string]SimTrip, len(static.Trips))
+	// --- Trip index: tripID → TripInfo (for departure enrichment) ---
+	tripIndex := make(map[string]TripInfo, len(static.Trips))
 	for i := range static.Trips {
 		trip := &static.Trips[i]
 		if trip.Route == nil || trip.Service == nil {
@@ -178,82 +161,30 @@ func (s *StaticStore) load(zipData []byte) error {
 		tripStops := make([]TripStop, 0, len(trip.StopTimes))
 		for j := range trip.StopTimes {
 			st := &trip.StopTimes[j]
-			if st.Stop == nil || st.Stop.Latitude == nil || st.Stop.Longitude == nil {
+			if st.Stop == nil {
 				continue
 			}
 			tripStops = append(tripStops, TripStop{
 				StopID:        st.Stop.Id,
-				Lat:           *st.Stop.Latitude,
-				Lon:           *st.Stop.Longitude,
 				ArrivalTime:   st.ArrivalTime,
 				DepartureTime: st.DepartureTime,
 			})
 		}
 		if len(tripStops) < 2 {
-			continue // need at least 2 stops to interpolate
+			continue
 		}
-
-		sim := SimTrip{
+		tripIndex[trip.ID] = TripInfo{
 			TripID:    trip.ID,
 			RouteID:   trip.Route.Id,
 			ServiceID: trip.Service.Id,
 			Stops:     tripStops,
 		}
-
-		// Attach shape geometry and snap stops to nearest shape points
-		if trip.Shape != nil && len(trip.Shape.Points) >= 2 {
-			shape := make([]ShapePoint, len(trip.Shape.Points))
-			for j, sp := range trip.Shape.Points {
-				shape[j] = ShapePoint{Lat: sp.Latitude, Lon: sp.Longitude}
-			}
-			sim.Shape = shape
-			sim.StopSnap = snapStopsToShape(tripStops, shape)
-		}
-
-		tripIndex[trip.ID] = sim
-	}
-
-	// --- Route shapes: pick the longest shape per rail route ---
-	// routeID → longest shape's points
-	type shapeCandidate struct {
-		points [][2]float64
-	}
-	bestShapes := make(map[string]shapeCandidate)
-	for i := range static.Trips {
-		trip := &static.Trips[i]
-		if trip.Route == nil || trip.Shape == nil {
-			continue
-		}
-		// Only rail routes (type 2) and light rail (type 0)
-		rt := int(trip.Route.Type)
-		if rt != 0 && rt != 2 {
-			continue
-		}
-		if len(trip.Shape.Points) <= len(bestShapes[trip.Route.Id].points) {
-			continue
-		}
-		pts := make([][2]float64, len(trip.Shape.Points))
-		for j, sp := range trip.Shape.Points {
-			pts[j] = [2]float64{sp.Longitude, sp.Latitude}
-		}
-		bestShapes[trip.Route.Id] = shapeCandidate{points: pts}
-	}
-	routeShapes := make([]models.RouteShape, 0, len(bestShapes))
-	for rid, sc := range bestShapes {
-		r := routes[rid]
-		routeShapes = append(routeShapes, models.RouteShape{
-			RouteID:   rid,
-			RouteName: r.LongName,
-			Color:     r.Color,
-			Points:    sc.points,
-		})
 	}
 
 	s.mu.Lock()
 	s.stops = stops
 	s.stopNames = stopNames
 	s.routes = routes
-	s.routeShapes = routeShapes
 	s.stopIndex = stopIndex
 	s.stopCodes = stopCodes
 	s.services = services
@@ -290,21 +221,13 @@ func (s *StaticStore) AllStops() []models.Stop {
 	return out
 }
 
-func (s *StaticStore) RouteShapes() []models.RouteShape {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	out := make([]models.RouteShape, len(s.routeShapes))
-	copy(out, s.routeShapes)
-	return out
-}
-
 func (s *StaticStore) GetStopName(id string) string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.stopNames[id]
 }
 
-func (s *StaticStore) GetSimTrip(tripID string) (SimTrip, bool) {
+func (s *StaticStore) GetTrip(tripID string) (TripInfo, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	t, ok := s.tripIndex[tripID]
@@ -313,7 +236,7 @@ func (s *StaticStore) GetSimTrip(tripID string) (SimTrip, bool) {
 
 // RemainingStopNames returns the names of stops after the given stopIDs in a trip.
 func (s *StaticStore) RemainingStopNames(tripID string, departureStopIDs []string) []string {
-	trip, ok := s.GetSimTrip(tripID)
+	trip, ok := s.GetTrip(tripID)
 	if !ok {
 		return nil
 	}
@@ -321,7 +244,6 @@ func (s *StaticStore) RemainingStopNames(tripID string, departureStopIDs []strin
 	for _, id := range departureStopIDs {
 		depSet[id] = true
 	}
-	// Find the departure stop index, then collect remaining stop names.
 	found := false
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -372,7 +294,7 @@ func (s *StaticStore) DeparturesForStop(stopID string) []ScheduledDeparture {
 // at the first matching stop from destStopIDs. Returns 0, false if not found.
 func (s *StaticStore) ArrivalTimeAtStop(tripID string, destStopIDs []string) (time.Duration, bool) {
 	s.mu.RLock()
-	sim, ok := s.tripIndex[tripID]
+	trip, ok := s.tripIndex[tripID]
 	s.mu.RUnlock()
 	if !ok {
 		return 0, false
@@ -381,7 +303,7 @@ func (s *StaticStore) ArrivalTimeAtStop(tripID string, destStopIDs []string) (ti
 	for _, id := range destStopIDs {
 		destSet[id] = true
 	}
-	for _, ts := range sim.Stops {
+	for _, ts := range trip.Stops {
 		if destSet[ts.StopID] {
 			return ts.ArrivalTime, true
 		}
@@ -397,38 +319,12 @@ func (s *StaticStore) IsServiceActive(serviceID string, date time.Time) bool {
 	if !ok {
 		return false
 	}
-	return serviceActive(svc, date)
-}
-
-// ActiveSimTrips returns all trips whose service is active on the given date.
-// Used by the position simulator to find trips currently running.
-func (s *StaticStore) ActiveSimTrips(now time.Time) []SimTrip {
-	loc, _ := time.LoadLocation("America/Toronto")
-	nowLocal := now.In(loc)
-	today := truncateToDay(nowLocal)
-
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	out := make([]SimTrip, 0, 256)
-	for _, trip := range s.tripIndex {
-		svc, ok := s.services[trip.ServiceID]
-		if !ok {
-			continue
-		}
-		if serviceActive(svc, today) {
-			out = append(out, trip)
-		}
-	}
-	return out
+	return serviceActive(&svc, date)
 }
 
 func serviceActive(svc *gtfs.Service, date time.Time) bool {
-	// Compare calendar dates only (year, month, day) to avoid timezone instant mismatches.
-	// GTFS dates from the parser may be in UTC while our date is in America/Toronto.
 	y, m, d := date.Date()
 
-	// Check added/removed exception dates first.
 	for _, removed := range svc.RemovedDates {
 		ry, rm, rd := removed.Date()
 		if y == ry && m == rm && d == rd {
@@ -442,7 +338,6 @@ func serviceActive(svc *gtfs.Service, date time.Time) bool {
 		}
 	}
 
-	// Check date range using calendar dates, not instants.
 	sy, sm, sd := svc.StartDate.Date()
 	ey, em, ed := svc.EndDate.Date()
 	startVal := sy*10000 + int(sm)*100 + sd
@@ -452,7 +347,6 @@ func serviceActive(svc *gtfs.Service, date time.Time) bool {
 		return false
 	}
 
-	// Check weekday.
 	switch date.Weekday() {
 	case time.Monday:
 		return svc.Monday
@@ -474,32 +368,4 @@ func serviceActive(svc *gtfs.Service, date time.Time) bool {
 
 func truncateToDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-}
-
-// snapStopsToShape maps each trip stop to the nearest shape point index.
-// Searches forward only to preserve ordering along the shape.
-func snapStopsToShape(stops []TripStop, shape []ShapePoint) []int {
-	snap := make([]int, len(stops))
-	searchFrom := 0
-	for i, st := range stops {
-		bestIdx := searchFrom
-		bestDist := distSq(st.Lat, st.Lon, shape[searchFrom].Lat, shape[searchFrom].Lon)
-		for j := searchFrom + 1; j < len(shape); j++ {
-			d := distSq(st.Lat, st.Lon, shape[j].Lat, shape[j].Lon)
-			if d < bestDist {
-				bestDist = d
-				bestIdx = j
-			}
-		}
-		snap[i] = bestIdx
-		searchFrom = bestIdx
-	}
-	return snap
-}
-
-// distSq returns the squared Euclidean distance (good enough for nearest-point comparison).
-func distSq(lat1, lon1, lat2, lon2 float64) float64 {
-	dlat := lat1 - lat2
-	dlon := lon1 - lon2
-	return dlat*dlat + dlon*dlon
 }

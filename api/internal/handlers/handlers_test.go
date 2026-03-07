@@ -90,46 +90,6 @@ func TestAllStops(t *testing.T) {
 	}
 }
 
-func TestPositions(t *testing.T) {
-	rt := gtfsstore.NewRealtimeCache()
-	rt.SetPositions([]models.VehiclePosition{
-		{VehicleID: "V1", TripID: "T1", RouteID: "01", Lat: 43.6, Lon: -79.3, Timestamp: 1000},
-	})
-
-	h := handlers.New(nil, rt, nil)
-	req := httptest.NewRequest("GET", "/api/positions", nil)
-	w := httptest.NewRecorder()
-	h.Positions(w, req)
-
-	if w.Code != 200 {
-		t.Fatalf("expected 200, got %d", w.Code)
-	}
-
-	var positions []models.VehiclePosition
-	if err := json.Unmarshal(w.Body.Bytes(), &positions); err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
-	}
-	if len(positions) != 1 || positions[0].VehicleID != "V1" {
-		t.Fatalf("unexpected positions: %+v", positions)
-	}
-}
-
-func TestPositions_Empty(t *testing.T) {
-	rt := gtfsstore.NewRealtimeCache()
-	h := handlers.New(nil, rt, nil)
-
-	req := httptest.NewRequest("GET", "/api/positions", nil)
-	w := httptest.NewRecorder()
-	h.Positions(w, req)
-
-	if w.Code != 200 {
-		t.Fatalf("expected 200, got %d", w.Code)
-	}
-	if w.Body.String() != "[]" {
-		t.Fatalf("expected empty array, got %s", w.Body.String())
-	}
-}
-
 func TestAlerts(t *testing.T) {
 	rt := gtfsstore.NewRealtimeCache()
 	rt.SetAlerts([]models.Alert{
