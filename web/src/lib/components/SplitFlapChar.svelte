@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-
   let { value = ' ', delay = 0 }: { value: string; delay?: number } = $props();
 
   let displayValue = $state(value);
@@ -15,18 +13,24 @@
     return CHARS[(idx + 1) % CHARS.length];
   }
 
+  let flipGeneration = 0;
+
   async function flipTo(target: string) {
+    const gen = ++flipGeneration;
     const targetUpper = target.toUpperCase();
     if (displayValue.toUpperCase() === targetUpper) return;
 
     await new Promise((r) => setTimeout(r, delay));
+    if (gen !== flipGeneration) return; // cancelled
 
     let current = displayValue.toUpperCase();
     while (current !== targetUpper) {
+      if (gen !== flipGeneration) return; // cancelled
       current = getNextChar(current);
       topValue = current;
       isFlipping = true;
       await new Promise((r) => setTimeout(r, 40));
+      if (gen !== flipGeneration) return;
       isFlipping = false;
       bottomValue = current;
       displayValue = current;
