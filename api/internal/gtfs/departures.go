@@ -3,6 +3,7 @@ package gtfs
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/teclara/sixrail/api/internal/models"
@@ -121,13 +122,15 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 		}
 
 		// Enrich with service glance data (occupancy, car count).
-		if sg, ok := rt.GetServiceGlanceEntry(c.dep.TripID); ok {
+		// GTFS trip ID format: "20260424-LW-1731" → trip number is "1731"
+		tripNumber := extractTripNumber(c.dep.TripID)
+		if sg, ok := rt.GetServiceGlanceEntry(tripNumber); ok {
 			dep.Occupancy = sg.Occupancy
 			dep.Cars = sg.Cars
 		}
 
 		// Flag cancelled trips from exceptions cache.
-		if rt.IsTripCancelled(c.dep.TripID) {
+		if rt.IsTripCancelled(tripNumber) {
 			dep.IsCancelled = true
 			dep.Status = "Cancelled"
 		}
@@ -158,6 +161,15 @@ func findDelay(tripID, stopID string, rt *RealtimeCache) time.Duration {
 		}
 	}
 	return delay
+}
+
+// extractTripNumber returns the Metrolinx trip number from a GTFS trip ID.
+// GTFS trip IDs have the format "20260424-LW-1731"; the trip number is the last segment.
+func extractTripNumber(tripID string) string {
+	if idx := strings.LastIndex(tripID, "-"); idx >= 0 && idx+1 < len(tripID) {
+		return tripID[idx+1:]
+	}
+	return tripID
 }
 
 // formatTime returns "HH:MM" in local time.

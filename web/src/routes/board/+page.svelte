@@ -178,12 +178,28 @@
 	{#if selectedStation}
 		<!-- Station departures view -->
 		<div
-			class="col-headers-station px-4 pt-3 pb-2 text-gray-600 text-xs uppercase tracking-widest border-b border-[#161616]"
+			class="flap-row-station px-4 pt-3 pb-2 border-b border-[#161616]"
 		>
-			<span class="col-time">Time</span>
-			<span class="col-line">Line</span>
-			<span class="col-plat">Plat</span>
-			<span class="col-status">Status</span>
+			<span class="col-time text-amber-400">
+				{#each padRight('TIME', 5).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
+			<span class="col-line text-white">
+				{#each padRight('LINE', 14).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
+			<span class="col-plat text-white">
+				{#each padRight('PLAT', 4).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
+			<span class="col-status text-gray-400">
+				{#each padRight('STATUS', 7).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
 		</div>
 
 		<div class="rows px-4">
@@ -217,7 +233,7 @@
 
 					{#if dep.stops && dep.stops.length > 0}
 						<div
-							class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5ch+2px+8px)]"
+							class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5*(1ch+2px)+8px)]"
 						>
 							{dep.stops.join(' · ')}
 						</div>
@@ -234,12 +250,28 @@
 	{:else}
 		<!-- Union Station departures view -->
 		<div
-			class="col-headers px-4 pt-3 pb-2 text-gray-600 text-xs uppercase tracking-widest border-b border-[#161616]"
+			class="flap-row px-4 pt-3 pb-2 border-b border-[#161616]"
 		>
-			<span class="col-time">Time</span>
-			<span class="col-service">Service</span>
-			<span class="col-plat">Plat</span>
-			<span class="col-info">Status</span>
+			<span class="col-time text-amber-400">
+				{#each padRight('TIME', 5).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
+			<span class="col-service text-white">
+				{#each padRight('SERVICE', 16).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
+			<span class="col-plat text-white">
+				{#each padRight('PLAT', 5).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
+			<span class="col-info text-gray-400">
+				{#each padRight('STATUS', 7).split('') as char}
+					<SplitFlapChar value={char} delay={0} />
+				{/each}
+			</span>
 		</div>
 
 		<div class="rows px-4">
@@ -273,7 +305,7 @@
 
 					{#if dep.stops.length > 0}
 						<div
-							class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5ch+2px+8px)]"
+							class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5*(1ch+2px)+8px)]"
 						>
 							{dep.stops.join(' · ')}
 						</div>
@@ -291,7 +323,6 @@
 </div>
 
 <style>
-	.col-headers,
 	.flap-row {
 		display: grid;
 		grid-template-columns: 5ch 16ch 5ch 7ch;
@@ -299,7 +330,6 @@
 		align-items: center;
 	}
 
-	.col-headers-station,
 	.flap-row-station {
 		display: grid;
 		grid-template-columns: 5ch 14ch 4ch 7ch;
@@ -427,13 +457,11 @@
 	}
 
 	@media (max-width: 480px) {
-		.col-headers,
 		.flap-row {
 			grid-template-columns: 5ch 13ch 4ch 7ch;
 			gap: 4px;
 		}
 
-		.col-headers-station,
 		.flap-row-station {
 			grid-template-columns: 5ch 11ch 3ch 7ch;
 			gap: 4px;
