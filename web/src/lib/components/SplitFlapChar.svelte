@@ -43,7 +43,19 @@
 	}
 
 	$effect(() => {
-		flipTo(value);
+		const target = value;
+		let cancelled = false;
+
+		queueMicrotask(() => {
+			if (!cancelled) {
+				void flipTo(target);
+			}
+		});
+
+		return () => {
+			cancelled = true;
+			flipGeneration += 1;
+		};
 	});
 </script>
 
