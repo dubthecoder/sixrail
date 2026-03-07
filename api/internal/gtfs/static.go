@@ -311,6 +311,36 @@ func (s *StaticStore) GetSimTrip(tripID string) (SimTrip, bool) {
 	return t, ok
 }
 
+// RemainingStopNames returns the names of stops after the given stopIDs in a trip.
+func (s *StaticStore) RemainingStopNames(tripID string, departureStopIDs []string) []string {
+	trip, ok := s.GetSimTrip(tripID)
+	if !ok {
+		return nil
+	}
+	depSet := make(map[string]bool, len(departureStopIDs))
+	for _, id := range departureStopIDs {
+		depSet[id] = true
+	}
+	// Find the departure stop index, then collect remaining stop names.
+	found := false
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var names []string
+	for _, ts := range trip.Stops {
+		if !found {
+			if depSet[ts.StopID] {
+				found = true
+			}
+			continue
+		}
+		name := s.stopNames[ts.StopID]
+		if name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 func (s *StaticStore) GetRoute(id string) (models.Route, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

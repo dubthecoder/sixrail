@@ -111,6 +111,7 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 			Status:        status,
 			RouteColor:    route.Color,
 			DelayMinutes:  delayMin,
+			Stops:         static.RemainingStopNames(c.dep.TripID, stopIDs),
 		}
 		if len(destStopIDs) > 0 {
 			if arrDur, ok := static.ArrivalTimeAtStop(c.dep.TripID, destStopIDs); ok {

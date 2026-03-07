@@ -35,14 +35,15 @@ type VehiclePosition struct {
 }
 
 type Departure struct {
-	Line          string `json:"line"`
-	Destination   string `json:"destination"`
-	ScheduledTime string `json:"scheduledTime"` // "HH:MM" local time
-	ArrivalTime   string `json:"arrivalTime,omitempty"` // "HH:MM" arrival at destination stop
-	Status        string `json:"status"`        // "On Time", "Delayed +Xm", "Cancelled"
-	Platform      string `json:"platform,omitempty"`
-	RouteColor    string `json:"routeColor,omitempty"`
-	DelayMinutes  int    `json:"delayMinutes,omitempty"`
+	Line          string   `json:"line"`
+	Destination   string   `json:"destination"`
+	ScheduledTime string   `json:"scheduledTime"` // "HH:MM" local time
+	ArrivalTime   string   `json:"arrivalTime,omitempty"` // "HH:MM" arrival at destination stop
+	Status        string   `json:"status"`        // "On Time", "Delayed +Xm", "Cancelled"
+	Platform      string   `json:"platform,omitempty"`
+	RouteColor    string   `json:"routeColor,omitempty"`
+	DelayMinutes  int      `json:"delayMinutes,omitempty"`
+	Stops         []string `json:"stops,omitempty"`
 }
 
 type RouteShape struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -75,8 +76,12 @@ func (c *Client) GetNextService(ctx context.Context, stopCode string) ([]models.
 }
 
 // GetUnionDepartures fetches the live Union Station departures board.
-func (c *Client) GetUnionDepartures(ctx context.Context) ([]models.UnionDeparture, error) {
-	data, err := c.Fetch(ctx, "/ServiceUpdate/UnionDepartures/All")
+// mode can be "All", "Train", or "Bus".
+func (c *Client) GetUnionDepartures(ctx context.Context, mode string) ([]models.UnionDeparture, error) {
+	if mode == "" {
+		mode = "All"
+	}
+	data, err := c.Fetch(ctx, "/ServiceUpdate/UnionDepartures/"+mode)
 	if err != nil {
 		return nil, err
 	}
@@ -104,6 +109,9 @@ func (c *Client) GetUnionDepartures(ctx context.Context) ([]models.UnionDepartur
 			Stops:      stops,
 		})
 	}
+	sort.Slice(deps, func(i, j int) bool {
+		return deps[i].Time < deps[j].Time
+	})
 	return deps, nil
 }
 
