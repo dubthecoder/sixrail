@@ -20,6 +20,12 @@ type Fetcher interface {
 	Fetch(ctx context.Context, path string) ([]byte, error)
 }
 
+// ServiceGlanceFetcher fetches service-at-a-glance and exceptions data.
+type ServiceGlanceFetcher interface {
+	GetServiceGlance(ctx context.Context) ([]models.ServiceGlanceEntry, error)
+	GetExceptions(ctx context.Context) (map[string]bool, error)
+}
+
 // --- JSON structures matching Metrolinx GTFS-RT JSON format ---
 
 type gtfsRTFeed struct {
@@ -149,16 +155,23 @@ type RawTripUpdate struct {
 
 // --- Cache ---
 
-// RealtimeCache is a thread-safe store for enriched positions, alerts, and trip updates.
+// RealtimeCache is a thread-safe store for enriched positions, alerts, trip updates,
+// service glance data, and exception/cancellation info.
 type RealtimeCache struct {
-	mu          sync.RWMutex
-	positions   []models.VehiclePosition
-	alerts      []models.Alert
-	tripUpdates map[string]RawTripUpdate
+	mu             sync.RWMutex
+	positions      []models.VehiclePosition
+	alerts         []models.Alert
+	tripUpdates    map[string]RawTripUpdate
+	serviceGlance  map[string]models.ServiceGlanceEntry // keyed by trip number
+	cancelledTrips map[string]bool                       // set of cancelled trip numbers
 }
 
 func NewRealtimeCache() *RealtimeCache {
-	return &RealtimeCache{tripUpdates: make(map[string]RawTripUpdate)}
+	return &RealtimeCache{
+		tripUpdates:    make(map[string]RawTripUpdate),
+		serviceGlance:  make(map[string]models.ServiceGlanceEntry),
+		cancelledTrips: make(map[string]bool),
+	}
 }
 
 func (rc *RealtimeCache) SetPositions(positions []models.VehiclePosition) {
@@ -200,6 +213,43 @@ func (rc *RealtimeCache) GetTripUpdate(tripID string) (RawTripUpdate, bool) {
 	defer rc.mu.RUnlock()
 	u, ok := rc.tripUpdates[tripID]
 	return u, ok
+}
+
+func (rc *RealtimeCache) SetServiceGlance(entries map[string]models.ServiceGlanceEntry) {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	rc.serviceGlance = entries
+}
+
+// GetServiceGlanceEntry returns the service glance data for a trip number.
+func (rc *RealtimeCache) GetServiceGlanceEntry(tripNumber string) (models.ServiceGlanceEntry, bool) {
+	rc.mu.RLock()
+	defer rc.mu.RUnlock()
+	e, ok := rc.serviceGlance[tripNumber]
+	return e, ok
+}
+
+// GetAllServiceGlance returns all service glance entries (for network health aggregation).
+func (rc *RealtimeCache) GetAllServiceGlance() map[string]models.ServiceGlanceEntry {
+	rc.mu.RLock()
+	defer rc.mu.RUnlock()
+	out := make(map[string]models.ServiceGlanceEntry, len(rc.serviceGlance))
+	for k, v := range rc.serviceGlance {
+		out[k] = v
+	}
+	return out
+}
+
+func (rc *RealtimeCache) SetCancelledTrips(cancelled map[string]bool) {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	rc.cancelledTrips = cancelled
+}
+
+func (rc *RealtimeCache) IsTripCancelled(tripNumber string) bool {
+	rc.mu.RLock()
+	defer rc.mu.RUnlock()
+	return rc.cancelledTrips[tripNumber]
 }
 
 // --- JSON parsers ---
@@ -494,4 +544,64 @@ func fetchAndCacheTripUpdates(ctx context.Context, fetcher Fetcher, cache *Realt
 	}
 	cache.SetTripUpdates(updates)
 	slog.Info("trip updates refreshed", "count", len(updates))
+}
+
+// StartServiceGlancePoller polls ServiceataGlance/Trains/All for occupancy, car count, and line data.
+func StartServiceGlancePoller(ctx context.Context, fetcher ServiceGlanceFetcher, cache *RealtimeCache, interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		fetchAndCacheServiceGlance(ctx, fetcher, cache)
+		for {
+			select {
+			case <-ctx.Done():
+				slog.Info("service glance poller stopped")
+				return
+			case <-ticker.C:
+				fetchAndCacheServiceGlance(ctx, fetcher, cache)
+			}
+		}
+	}()
+}
+
+// StartExceptionsPoller polls ServiceUpdate/Exceptions/All for cancelled trips.
+func StartExceptionsPoller(ctx context.Context, fetcher ServiceGlanceFetcher, cache *RealtimeCache, interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		fetchAndCacheExceptions(ctx, fetcher, cache)
+		for {
+			select {
+			case <-ctx.Done():
+				slog.Info("exceptions poller stopped")
+				return
+			case <-ticker.C:
+				fetchAndCacheExceptions(ctx, fetcher, cache)
+			}
+		}
+	}()
+}
+
+func fetchAndCacheServiceGlance(ctx context.Context, fetcher ServiceGlanceFetcher, cache *RealtimeCache) {
+	entries, err := fetcher.GetServiceGlance(ctx)
+	if err != nil {
+		slog.Error("fetching service glance", "error", err)
+		return
+	}
+	m := make(map[string]models.ServiceGlanceEntry, len(entries))
+	for _, e := range entries {
+		m[e.TripNumber] = e
+	}
+	cache.SetServiceGlance(m)
+	slog.Info("service glance updated", "count", len(entries))
+}
+
+func fetchAndCacheExceptions(ctx context.Context, fetcher ServiceGlanceFetcher, cache *RealtimeCache) {
+	cancelled, err := fetcher.GetExceptions(ctx)
+	if err != nil {
+		slog.Error("fetching exceptions", "error", err)
+		return
+	}
+	cache.SetCancelledTrips(cancelled)
+	slog.Info("exceptions updated", "cancelledTrips", len(cancelled))
 }

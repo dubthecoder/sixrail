@@ -255,6 +255,57 @@ func bestNSMatch(scheduledHHMM string, candidates []models.NextServiceLine) *mod
 	return nil
 }
 
+// NetworkHealth returns the count of active trains per GO Transit line.
+func (h *Handlers) NetworkHealth(w http.ResponseWriter, r *http.Request) {
+	entries := h.rt.GetAllServiceGlance()
+	// Aggregate by line code.
+	type lineAgg struct {
+		name  string
+		count int
+	}
+	byLine := make(map[string]*lineAgg)
+	for _, e := range entries {
+		if e.LineCode == "" {
+			continue
+		}
+		if agg, ok := byLine[e.LineCode]; ok {
+			agg.count++
+		} else {
+			byLine[e.LineCode] = &lineAgg{name: e.LineName, count: 1}
+		}
+	}
+	result := make([]models.NetworkLine, 0, len(byLine))
+	for code, agg := range byLine {
+		result = append(result, models.NetworkLine{
+			LineCode:    code,
+			LineName:    agg.name,
+			ActiveTrips: agg.count,
+		})
+	}
+	respondJSON(w, result)
+}
+
+// Fares returns fare information between two stations.
+func (h *Handlers) Fares(w http.ResponseWriter, r *http.Request) {
+	fromCode := r.PathValue("from")
+	toCode := r.PathValue("to")
+	if !stopCodeRe.MatchString(fromCode) || !stopCodeRe.MatchString(toCode) {
+		jsonError(w, "invalid stop code", http.StatusBadRequest)
+		return
+	}
+	if h.mx == nil {
+		respondJSON(w, []models.FareInfo{})
+		return
+	}
+	fares, err := h.mx.GetFares(r.Context(), fromCode, toCode)
+	if err != nil {
+		slog.Warn("fares fetch failed", "error", err)
+		respondJSON(w, []models.FareInfo{})
+		return
+	}
+	respondJSON(w, fares)
+}
+
 // UnionDepartures returns live departures from Union Station via the Metrolinx REST API.
 func (h *Handlers) UnionDepartures(w http.ResponseWriter, r *http.Request) {
 	if h.mx == nil {

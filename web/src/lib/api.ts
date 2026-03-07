@@ -56,3 +56,11 @@ export function getAlerts() {
 export function getUnionDepartures() {
 	return fetchApi('/api/union-departures');
 }
+
+export function getNetworkHealth() {
+	return fetchApi('/api/network-health');
+}
+
+export function getFares(fromCode: string, toCode: string) {
+	return fetchApi(`/api/fares/${encodeURIComponent(fromCode)}/${encodeURIComponent(toCode)}`);
+}

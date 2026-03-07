@@ -111,6 +111,122 @@ func (c *Client) GetUnionDepartures(ctx context.Context) ([]models.UnionDepartur
 	return deps, nil
 }
 
+// serviceGlanceResponse mirrors the Metrolinx ServiceataGlance/Trains/All JSON structure.
+type serviceGlanceResponse struct {
+	Trips struct {
+		Trip []struct {
+			Cars                string  `json:"Cars"`
+			TripNumber          string  `json:"TripNumber"`
+			LineCode            string  `json:"LineCode"`
+			Display             string  `json:"Display"`
+			OccupancyPercentage int     `json:"OccupancyPercentage"`
+			Latitude            float64 `json:"Latitude"`
+			Longitude           float64 `json:"Longitude"`
+			IsInMotion          bool    `json:"IsInMotion"`
+		} `json:"Trip"`
+	} `json:"Trips"`
+}
+
+// exceptionsResponse mirrors the Metrolinx ServiceUpdate/Exceptions/All JSON structure.
+type exceptionsResponse struct {
+	Trip []struct {
+		TripNumber  string `json:"TripNumber"`
+		IsCancelled string `json:"IsCancelled"`
+		Stop        []struct {
+			Code        string `json:"Code"`
+			IsCancelled string `json:"IsCancelled"`
+		} `json:"Stop"`
+	} `json:"Trip"`
+}
+
+// faresResponse mirrors the Metrolinx Fares JSON structure.
+type faresResponse struct {
+	AllFares struct {
+		FareCategory []struct {
+			Type    string `json:"Type"`
+			Tickets []struct {
+				Type  string `json:"Type"`
+				Fares []struct {
+					Type     string  `json:"Type"`
+					Amount   float64 `json:"Amount"`
+					Category string  `json:"Category"`
+				} `json:"Fares"`
+			} `json:"Tickets"`
+		} `json:"FareCategory"`
+	} `json:"AllFares"`
+}
+
+// GetServiceGlance fetches all in-service train trips with occupancy and car count.
+func (c *Client) GetServiceGlance(ctx context.Context) ([]models.ServiceGlanceEntry, error) {
+	data, err := c.Fetch(ctx, "/ServiceataGlance/Trains/All")
+	if err != nil {
+		return nil, err
+	}
+	var resp serviceGlanceResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("parsing ServiceGlance: %w", err)
+	}
+
+	entries := make([]models.ServiceGlanceEntry, 0, len(resp.Trips.Trip))
+	for _, t := range resp.Trips.Trip {
+		entries = append(entries, models.ServiceGlanceEntry{
+			TripNumber: t.TripNumber,
+			LineCode:   t.LineCode,
+			LineName:   strings.TrimSpace(t.Display),
+			Cars:       t.Cars,
+			Occupancy:  t.OccupancyPercentage,
+		})
+	}
+	return entries, nil
+}
+
+// GetExceptions fetches cancelled trips and returns a set of cancelled trip numbers.
+func (c *Client) GetExceptions(ctx context.Context) (map[string]bool, error) {
+	data, err := c.Fetch(ctx, "/ServiceUpdate/Exceptions/All")
+	if err != nil {
+		return nil, err
+	}
+	var resp exceptionsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("parsing Exceptions: %w", err)
+	}
+
+	cancelled := make(map[string]bool)
+	for _, t := range resp.Trip {
+		if strings.EqualFold(t.IsCancelled, "true") {
+			cancelled[t.TripNumber] = true
+		}
+	}
+	return cancelled, nil
+}
+
+// GetFares fetches fare information between two stations.
+func (c *Client) GetFares(ctx context.Context, fromCode, toCode string) ([]models.FareInfo, error) {
+	data, err := c.Fetch(ctx, fmt.Sprintf("/Fares/%s/%s", fromCode, toCode))
+	if err != nil {
+		return nil, err
+	}
+	var resp faresResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("parsing Fares: %w", err)
+	}
+
+	var fares []models.FareInfo
+	for _, cat := range resp.AllFares.FareCategory {
+		for _, ticket := range cat.Tickets {
+			for _, f := range ticket.Fares {
+				fares = append(fares, models.FareInfo{
+					Category:   cat.Type,
+					TicketType: ticket.Type,
+					FareType:   f.Type,
+					Amount:     f.Amount,
+				})
+			}
+		}
+	}
+	return fares, nil
+}
+
 // parseMetrolinxTime extracts "HH:MM" from "YYYY-MM-DD HH:MM:SS".
 func parseMetrolinxTime(s string) string {
 	t, err := time.Parse("2006-01-02 15:04:05", s)

@@ -119,6 +119,19 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 				dep.ArrivalTime = formatTime(c.serviceDay.Add(arrDur))
 			}
 		}
+
+		// Enrich with service glance data (occupancy, car count).
+		if sg, ok := rt.GetServiceGlanceEntry(c.dep.TripID); ok {
+			dep.Occupancy = sg.Occupancy
+			dep.Cars = sg.Cars
+		}
+
+		// Flag cancelled trips from exceptions cache.
+		if rt.IsTripCancelled(c.dep.TripID) {
+			dep.IsCancelled = true
+			dep.Status = "Cancelled"
+		}
+
 		result = append(result, dep)
 
 		if len(result) >= maxDepartures {

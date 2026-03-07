@@ -45,6 +45,9 @@ type Departure struct {
 	RouteColor    string   `json:"routeColor,omitempty"`
 	DelayMinutes  int      `json:"delayMinutes,omitempty"`
 	Stops         []string `json:"stops,omitempty"`
+	Occupancy     int      `json:"occupancy,omitempty"`     // 0-100 percentage
+	Cars          string   `json:"cars,omitempty"`           // number of coaches
+	IsCancelled   bool     `json:"isCancelled,omitempty"`
 }
 
 type RouteShape struct {
@@ -97,6 +100,30 @@ type UnionDeparture struct {
 	Time       string   `json:"time"` // "HH:MM"
 	Info       string   `json:"info"` // "Proceed", "Wait", etc.
 	Stops      []string `json:"stops"`
+}
+
+// NetworkLine represents the count of active trains on a GO Transit line.
+type NetworkLine struct {
+	LineCode    string `json:"lineCode"`
+	LineName    string `json:"lineName"`
+	ActiveTrips int    `json:"activeTrips"`
+}
+
+// FareInfo represents a single fare option between two stations.
+type FareInfo struct {
+	Category   string  `json:"category"`   // e.g. "Adult", "Senior/Youth"
+	TicketType string  `json:"ticketType"` // e.g. "Single Ride", "Day Pass"
+	FareType   string  `json:"fareType"`   // e.g. "PRESTO", "Cash"
+	Amount     float64 `json:"amount"`
+}
+
+// ServiceGlanceEntry holds cached data from the ServiceataGlance/Trains/All endpoint.
+type ServiceGlanceEntry struct {
+	TripNumber  string
+	LineCode    string
+	LineName    string // Display field
+	Cars        string
+	Occupancy   int
 }
 
 type Alert struct {

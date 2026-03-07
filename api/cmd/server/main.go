@@ -60,6 +60,8 @@ func main() {
 			gtfsstore.StartPositionPoller(ctx, mxClient, static, rtCache, 10*time.Second)
 			gtfsstore.StartAlertPoller(ctx, mxClient, static, rtCache, 30*time.Second)
 			gtfsstore.StartTripUpdatePoller(ctx, mxClient, rtCache, 30*time.Second)
+			gtfsstore.StartServiceGlancePoller(ctx, mxClient, rtCache, 30*time.Second)
+			gtfsstore.StartExceptionsPoller(ctx, mxClient, rtCache, 60*time.Second)
 		}
 	}
 
@@ -74,6 +76,8 @@ func main() {
 	mux.HandleFunc("GET /api/trip/{tripId}", h.TripDetail)
 	mux.HandleFunc("GET /api/positions", h.Positions)
 	mux.HandleFunc("GET /api/alerts", h.Alerts)
+	mux.HandleFunc("GET /api/network-health", h.NetworkHealth)
+	mux.HandleFunc("GET /api/fares/{from}/{to}", h.Fares)
 
 	handler := corsMiddleware(cfg.AllowedOrigins, mux)
 

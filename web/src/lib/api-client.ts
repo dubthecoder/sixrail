@@ -17,6 +17,9 @@ export type Departure = {
 	routeColor?: string;
 	delayMinutes?: number;
 	stops?: string[];
+	occupancy?: number;
+	cars?: string;
+	isCancelled?: boolean;
 };
 
 export async function fetchDepartures(stopCode: string, destCode?: string): Promise<Departure[]> {
@@ -39,6 +42,31 @@ export type UnionDeparture = {
 
 export async function fetchUnionDepartures(): Promise<UnionDeparture[]> {
 	const res = await fetch('/api/union-departures');
+	if (!res.ok) return [];
+	return res.json();
+}
+
+export type NetworkLine = {
+	lineCode: string;
+	lineName: string;
+	activeTrips: number;
+};
+
+export async function fetchNetworkHealth(): Promise<NetworkLine[]> {
+	const res = await fetch('/api/network-health');
+	if (!res.ok) return [];
+	return res.json();
+}
+
+export type FareInfo = {
+	category: string;
+	ticketType: string;
+	fareType: string;
+	amount: number;
+};
+
+export async function fetchFares(from: string, to: string): Promise<FareInfo[]> {
+	const res = await fetch(`/api/fares/${encodeURIComponent(from)}/${encodeURIComponent(to)}`);
 	if (!res.ok) return [];
 	return res.json();
 }

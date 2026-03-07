@@ -4,8 +4,8 @@
 	import type { CommuteStore } from '$lib/stores/commute';
 	import type { Stop } from '$lib/api';
 	import type { Alert } from '$lib/api';
-	import type { Departure } from '$lib/api-client';
-	import { fetchDepartures, fetchAlerts } from '$lib/api-client';
+	import type { Departure, NetworkLine, FareInfo } from '$lib/api-client';
+	import { fetchDepartures, fetchAlerts, fetchNetworkHealth, fetchFares } from '$lib/api-client';
 	import { untrack } from 'svelte';
 	import SplitFlapBoard from './SplitFlapBoard.svelte';
 	import CountdownTimer from './CountdownTimer.svelte';
@@ -24,6 +24,8 @@
 
 	let departures = $state<Departure[]>([]);
 	let alerts = $state<Alert[]>(untrack(() => initialAlerts));
+	let networkHealth = $state<NetworkLine[]>([]);
+	let fares = $state<FareInfo[]>([]);
 	let showSettings = $state(false);
 	let loading = $state(false);
 
@@ -67,19 +69,51 @@
 		}
 	}
 
+	async function loadNetworkHealth() {
+		try {
+			networkHealth = await fetchNetworkHealth();
+		} catch {
+			// keep existing data on error
+		}
+	}
+
+	async function loadFares() {
+		if (!activeTrip) {
+			fares = [];
+			return;
+		}
+		try {
+			fares = await fetchFares(activeTrip.originCode, activeTrip.destinationCode);
+		} catch {
+			fares = [];
+		}
+	}
+
+	let prestoFare = $derived(
+		fares.find((f) => f.fareType === 'PRESTO' && f.category === 'Adult') ??
+			fares.find((f) => f.category === 'Adult') ??
+			fares[0]
+	);
+
 	let departInterval: ReturnType<typeof setInterval>;
 	let alertInterval: ReturnType<typeof setInterval>;
+
+	let healthInterval: ReturnType<typeof setInterval>;
 
 	onMount(() => {
 		loadDepartures();
 		loadAlerts();
+		loadNetworkHealth();
+		loadFares();
 		departInterval = setInterval(loadDepartures, 30_000);
 		alertInterval = setInterval(loadAlerts, 60_000);
+		healthInterval = setInterval(loadNetworkHealth, 30_000);
 	});
 
 	onDestroy(() => {
 		clearInterval(departInterval);
 		clearInterval(alertInterval);
+		clearInterval(healthInterval);
 		unsubCommute();
 	});
 
@@ -87,6 +121,7 @@
 		// Reload when active trip changes
 		activeTrip;
 		loadDepartures();
+		loadFares();
 	});
 
 	// Pass empty array — AlertBanner shows all alerts when no route filter is provided
@@ -151,6 +186,21 @@
 			</button>
 		</div>
 
+		<!-- Network health bar -->
+		{#if networkHealth.length > 0}
+			<div class="network-health flex flex-wrap gap-2 justify-center py-2 border-b border-[#222]">
+				{#each networkHealth.sort((a, b) => a.lineCode.localeCompare(b.lineCode)) as line}
+					<div
+						class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1a1a1a] text-xs"
+						title="{line.lineName}: {line.activeTrips} active trains"
+					>
+						<span class="text-gray-400 font-semibold">{line.lineCode}</span>
+						<span class="text-green-400 font-bold">{line.activeTrips}</span>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
 		{#if activeTrip}
 			<!-- Route header -->
 			<div class="text-center">
@@ -169,6 +219,14 @@
 				</div>
 			{:else}
 				<SplitFlapBoard {departures} maxRows={3} />
+			{/if}
+
+			<!-- Fare display -->
+			{#if prestoFare}
+				<div class="text-center text-xs text-gray-500 mt-1">
+					<span class="text-gray-600">{prestoFare.category} {prestoFare.fareType}:</span>
+					<span class="text-amber-400 font-semibold">${prestoFare.amount.toFixed(2)}</span>
+				</div>
 			{/if}
 
 			<!-- Countdown -->

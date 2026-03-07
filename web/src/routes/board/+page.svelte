@@ -176,7 +176,9 @@
 
 	{#if selectedStation}
 		<!-- Station departures view -->
-		<div class="col-headers-station px-4 pt-3 pb-2 text-gray-600 text-xs uppercase tracking-widest border-b border-[#161616]">
+		<div
+			class="col-headers-station px-4 pt-3 pb-2 text-gray-600 text-xs uppercase tracking-widest border-b border-[#161616]"
+		>
 			<span class="col-time">Time</span>
 			<span class="col-line">Line</span>
 			<span class="col-plat">Plat</span>
@@ -213,7 +215,9 @@
 					</div>
 
 					{#if dep.stops && dep.stops.length > 0}
-						<div class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5ch+2px+8px)]">
+						<div
+							class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5ch+2px+8px)]"
+						>
 							{dep.stops.join(' · ')}
 						</div>
 					{/if}
@@ -228,7 +232,9 @@
 		</div>
 	{:else}
 		<!-- Union Station departures view -->
-		<div class="col-headers px-4 pt-3 pb-2 text-gray-600 text-xs uppercase tracking-widest border-b border-[#161616]">
+		<div
+			class="col-headers px-4 pt-3 pb-2 text-gray-600 text-xs uppercase tracking-widest border-b border-[#161616]"
+		>
 			<span class="col-time">Time</span>
 			<span class="col-service">Service</span>
 			<span class="col-plat">Plat</span>
@@ -265,7 +271,9 @@
 					</div>
 
 					{#if dep.stops.length > 0}
-						<div class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5ch+2px+8px)]">
+						<div
+							class="stops-line text-gray-400 text-xs tracking-wide truncate pl-[calc(5ch+2px+8px)]"
+						>
 							{dep.stops.join(' · ')}
 						</div>
 					{/if}

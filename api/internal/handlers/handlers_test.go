@@ -43,7 +43,7 @@ func mustBuildStore(t *testing.T) *gtfsstore.StaticStore {
 }
 
 func TestHealthHandler(t *testing.T) {
-	h := handlers.New(nil, nil)
+	h := handlers.New(nil, nil, nil)
 	req := httptest.NewRequest("GET", "/api/health", nil)
 	w := httptest.NewRecorder()
 
@@ -61,7 +61,7 @@ func TestHealthHandler(t *testing.T) {
 
 func TestAllStops(t *testing.T) {
 	store := mustBuildStore(t)
-	h := handlers.New(store, nil)
+	h := handlers.New(store, nil, nil)
 
 	req := httptest.NewRequest("GET", "/api/stops", nil)
 	w := httptest.NewRecorder()
@@ -96,7 +96,7 @@ func TestPositions(t *testing.T) {
 		{VehicleID: "V1", TripID: "T1", RouteID: "01", Lat: 43.6, Lon: -79.3, Timestamp: 1000},
 	})
 
-	h := handlers.New(nil, rt)
+	h := handlers.New(nil, rt, nil)
 	req := httptest.NewRequest("GET", "/api/positions", nil)
 	w := httptest.NewRecorder()
 	h.Positions(w, req)
@@ -116,7 +116,7 @@ func TestPositions(t *testing.T) {
 
 func TestPositions_Empty(t *testing.T) {
 	rt := gtfsstore.NewRealtimeCache()
-	h := handlers.New(nil, rt)
+	h := handlers.New(nil, rt, nil)
 
 	req := httptest.NewRequest("GET", "/api/positions", nil)
 	w := httptest.NewRecorder()
@@ -136,7 +136,7 @@ func TestAlerts(t *testing.T) {
 		{ID: "A1", Headline: "Delay on LW", Effect: "DELAY"},
 	})
 
-	h := handlers.New(nil, rt)
+	h := handlers.New(nil, rt, nil)
 	req := httptest.NewRequest("GET", "/api/alerts", nil)
 	w := httptest.NewRecorder()
 	h.Alerts(w, req)
@@ -156,7 +156,7 @@ func TestAlerts(t *testing.T) {
 
 func TestAlerts_Empty(t *testing.T) {
 	rt := gtfsstore.NewRealtimeCache()
-	h := handlers.New(nil, rt)
+	h := handlers.New(nil, rt, nil)
 
 	req := httptest.NewRequest("GET", "/api/alerts", nil)
 	w := httptest.NewRecorder()
@@ -173,7 +173,7 @@ func TestAlerts_Empty(t *testing.T) {
 func TestStopDepartures_ReturnsJSON(t *testing.T) {
 	store := mustBuildStore(t)
 	rt := gtfsstore.NewRealtimeCache()
-	h := handlers.New(store, rt)
+	h := handlers.New(store, rt, nil)
 
 	req := httptest.NewRequest("GET", "/api/departures/UN", nil)
 	req.SetPathValue("stopCode", "UN")
@@ -191,7 +191,7 @@ func TestStopDepartures_ReturnsJSON(t *testing.T) {
 }
 
 func TestStopDepartures_InvalidCode(t *testing.T) {
-	h := handlers.New(nil, nil)
+	h := handlers.New(nil, nil, nil)
 
 	cases := []string{"../etc", "", "A", "TOOLONGSTOPCODE123"}
 	for _, code := range cases {
