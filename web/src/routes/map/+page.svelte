@@ -11,8 +11,17 @@
 	import DeparturesPanel from '$lib/components/DeparturesPanel.svelte';
 	import FilterChips from '$lib/components/FilterChips.svelte';
 	import { filters, type FilterState } from '$lib/stores/filters';
+	import { commute, getActiveDirection } from '$lib/stores/commute';
 
 	let { data } = $props();
+
+	let commuteState = $state<{ toWork: any; toHome: any }>({ toWork: null, toHome: null });
+	$effect(() => {
+		const unsub = commute.subscribe((s) => (commuteState = s));
+		return unsub;
+	});
+
+	let activeTrip = $derived(commuteState[getActiveDirection(null)]);
 
 	let stops = $derived<Stop[]>(data.stops);
 	let shapes = $derived<RouteShape[]>(data.shapes);
@@ -370,5 +379,19 @@
 			stopName={selectedStop.name}
 			onclose={closePanel}
 		/>
+	{/if}
+
+	{#if activeTrip}
+		<button
+			class="absolute bottom-20 left-4 z-10 bg-[#161616] border border-[#2a2a2a] text-amber-400 font-mono text-xs px-3 py-2 rounded shadow-lg hover:border-amber-400 transition-colors"
+			onclick={() => {
+				const stop = stops.find((s) => s.code === activeTrip.originCode);
+				if (stop && map) {
+					map.flyTo({ center: [stop.lon, stop.lat], zoom: 14, duration: 1000 });
+				}
+			}}
+		>
+			◎ My Station
+		</button>
 	{/if}
 </div>
