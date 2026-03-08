@@ -39,10 +39,8 @@
 
 	let filteredStops = $derived(
 		searchQuery.length > 0
-			? data.stops
-					.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
-					.slice(0, 20)
-			: data.stops.slice(0, 20)
+			? data.stops.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+			: data.stops
 	);
 
 	let selectedStopName = $derived(
@@ -274,8 +272,8 @@
 						</span>
 
 						<span class="col-line text-white">
-							{#if dep.hasAlert}<span class="text-amber-400" title="Service alert">!</span>{/if}
-							{#each padRight(dep.lineName || dep.line, dep.hasAlert ? 13 : 14).split('') as char, j}
+							{#if dep.alert}<span class="text-amber-400" title="Service alert">!</span>{/if}
+							{#each padRight(dep.lineName || dep.line, dep.alert ? 13 : 14).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
 						</span>
@@ -312,6 +310,9 @@
 							</span>
 						{/if}
 					</div>
+					{#if dep.alert}
+						<div class="alert-line text-amber-400">⚠ {dep.alert}</div>
+					{/if}
 				</div>
 			{/each}
 
@@ -343,8 +344,8 @@
 						</span>
 
 						<span class="col-service text-white">
-							{#if dep.hasAlert}<span class="text-amber-400" title="Service alert">!</span>{/if}
-							{#each padRight(dep.service, dep.hasAlert ? 15 : 16).split('') as char, j}
+							{#if dep.alert}<span class="text-amber-400" title="Service alert">!</span>{/if}
+							{#each padRight(dep.service, dep.alert ? 15 : 16).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
 						</span>
@@ -381,6 +382,9 @@
 							</span>
 						{/if}
 					</div>
+					{#if dep.alert}
+						<div class="alert-line text-amber-400">⚠ {dep.alert}</div>
+					{/if}
 				</div>
 			{/each}
 
@@ -491,12 +495,19 @@
 		font-size: 0.55em;
 	}
 
-	.stops-line {
+	.alert-line {
+		font-size: 0.5em;
 		margin-top: 0.15em;
-		font-size: 0.55em;
-		padding-left: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.stops-line {
 		overflow: hidden;
 		white-space: nowrap;
+		flex: 1;
+		min-width: 0;
 	}
 
 	.stops-scroll {
