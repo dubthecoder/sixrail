@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SplitFlapChar from './SplitFlapChar.svelte';
 	import type { Departure } from '$lib/api-client';
+	import { padRight, padCenter, occupancyIcon, occupancyClass } from '$lib/display';
 
 	let {
 		departures = [],
@@ -10,62 +11,20 @@
 		maxRows?: number;
 	} = $props();
 
-	function padRight(str: string, len: number): string {
-		return str.toUpperCase().padEnd(len, ' ').slice(0, len);
-	}
-
-	function padCenter(str: string, len: number): string {
-		const s = str.toUpperCase().slice(0, len);
-		const left = Math.floor((len - s.length) / 2);
-		return s.padStart(s.length + left, ' ').padEnd(len, ' ');
-	}
-
 	function formatTime(t: string): string {
 		return t.slice(0, 5);
 	}
 
-	function statusText(d: Departure): string {
+	function boardStatusText(d: Departure): string {
 		if (d.isCancelled || d.status === 'Cancelled') return 'CANCELLED  ';
 		if (d.delayMinutes && d.delayMinutes > 0) return `DELAYED +${d.delayMinutes}MIN`;
 		return 'ON TIME    ';
 	}
 
-	function statusClass(d: Departure): string {
+	function boardStatusClass(d: Departure): string {
 		if (d.isCancelled || d.status === 'Cancelled') return 'text-red-500';
 		if (d.delayMinutes && d.delayMinutes > 0) return 'text-amber-400';
 		return 'text-green-400';
-	}
-
-	function occupancyIcon(status: string | undefined): string {
-		if (!status) return '';
-		switch (status) {
-			case 'MANY_SEATS_AVAILABLE':
-				return '\u25CB';
-			case 'FEW_SEATS_AVAILABLE':
-				return '\u25D1';
-			case 'STANDING_ROOM_ONLY':
-			case 'CRUSHED_STANDING_ROOM_ONLY':
-			case 'FULL':
-				return '\u25CF';
-			default:
-				return '';
-		}
-	}
-
-	function occupancyClass(status: string | undefined): string {
-		if (!status) return '';
-		switch (status) {
-			case 'MANY_SEATS_AVAILABLE':
-				return 'text-green-400';
-			case 'FEW_SEATS_AVAILABLE':
-				return 'text-amber-400';
-			case 'STANDING_ROOM_ONLY':
-			case 'CRUSHED_STANDING_ROOM_ONLY':
-			case 'FULL':
-				return 'text-red-400';
-			default:
-				return '';
-		}
 	}
 
 	let rows = $derived(departures.slice(0, maxRows));
@@ -124,8 +83,8 @@
 				{occupancyIcon(dep.occupancy)}
 			</span>
 
-			<span class="col-status {statusClass(dep)}">
-				{#each padRight(statusText(dep), 11).split('') as char, j}
+			<span class="col-status {boardStatusClass(dep)}">
+				{#each padRight(boardStatusText(dep), 11).split('') as char, j}
 					<SplitFlapChar value={char} delay={70 + j * 10} />
 				{/each}
 			</span>

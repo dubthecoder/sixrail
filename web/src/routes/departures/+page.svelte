@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
 	import type { Stop } from '$lib/api';
 	import { fetchDepartures, type Departure } from '$lib/api-client';
 	import StationSearchInput from '$lib/components/StationSearchInput.svelte';
 	import SplitFlapChar from '$lib/components/SplitFlapChar.svelte';
+	import { padRight, padCenter, statusText, statusClass } from '$lib/display';
 
 	let { data }: { data: { stops: Stop[] } } = $props();
 
@@ -43,34 +43,6 @@
 	onDestroy(() => {
 		clearInterval(refreshInterval);
 	});
-
-	$effect(() => {
-		if (browser && selectedStop) {
-			loadDepartures();
-		}
-	});
-
-	function padRight(str: string, len: number): string {
-		return str.toUpperCase().padEnd(len, ' ').slice(0, len);
-	}
-
-	function padCenter(str: string, len: number): string {
-		const s = str.toUpperCase().slice(0, len);
-		const left = Math.floor((len - s.length) / 2);
-		return s.padStart(s.length + left, ' ').padEnd(len, ' ');
-	}
-
-	function statusText(dep: Departure): string {
-		if (dep.isCancelled) return 'CANCEL';
-		if (dep.delayMinutes && dep.delayMinutes > 0) return `+${dep.delayMinutes}MIN`;
-		return dep.status || 'ON TIME';
-	}
-
-	function statusClass(dep: Departure): string {
-		if (dep.isCancelled) return 'text-red-500';
-		if (dep.delayMinutes && dep.delayMinutes > 0) return 'text-yellow-400';
-		return 'text-green-400';
-	}
 
 	function directionLabel(dep: Departure): { text: string; cls: string } {
 		if (dep.stops?.some((s) => /union station/i.test(s)))

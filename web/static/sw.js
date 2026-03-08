@@ -21,7 +21,16 @@ self.addEventListener('fetch', (event) => {
 	const url = new URL(event.request.url);
 
 	if (url.pathname.startsWith('/api/')) {
-		event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+		event.respondWith(
+			fetch(event.request).catch(
+				() =>
+					caches.match(event.request) ||
+					new Response(JSON.stringify([]), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' }
+					})
+			)
+		);
 		return;
 	}
 

@@ -19,9 +19,19 @@ export interface NotificationPrefs {
 	thresholdMinutes: 5 | 10 | 15;
 }
 
+function safeParse<T>(key: string, fallback: T): T {
+	try {
+		const raw = localStorage.getItem(key);
+		return raw ? JSON.parse(raw) : fallback;
+	} catch {
+		localStorage.removeItem(key);
+		return fallback;
+	}
+}
+
 function createCommuteStore() {
 	const initial: CommuteStore = browser
-		? (JSON.parse(localStorage.getItem('commute') || 'null') ?? { toWork: null, toHome: null })
+		? (safeParse<CommuteStore | null>('commute', null) ?? { toWork: null, toHome: null })
 		: { toWork: null, toHome: null };
 
 	const { subscribe, set, update } = writable<CommuteStore>(initial);
@@ -45,7 +55,7 @@ function createCommuteStore() {
 
 function createNotificationStore() {
 	const initial: NotificationPrefs = browser
-		? (JSON.parse(localStorage.getItem('notificationPrefs') || 'null') ?? {
+		? (safeParse<NotificationPrefs | null>('notificationPrefs', null) ?? {
 				enabled: false,
 				thresholdMinutes: 5
 			})

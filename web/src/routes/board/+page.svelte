@@ -10,6 +10,7 @@
 	} from '$lib/api-client';
 	import type { Stop } from '$lib/api';
 	import SplitFlapChar from '$lib/components/SplitFlapChar.svelte';
+	import { padRight, padCenter, statusText, statusClass, occupancyLabel } from '$lib/display';
 
 	let { data }: { data: { departures: UnionDeparture[]; stops: Stop[] } } = $props();
 
@@ -190,16 +191,6 @@
 		}
 	});
 
-	function padRight(str: string, len: number): string {
-		return str.toUpperCase().padEnd(len, ' ').slice(0, len);
-	}
-
-	function padCenter(str: string, len: number): string {
-		const s = str.toUpperCase().slice(0, len);
-		const left = Math.floor((len - s.length) / 2);
-		return s.padStart(s.length + left, ' ').padEnd(len, ' ');
-	}
-
 	type MetaPart = { text: string; cls: string };
 
 	function buildMetaParts(
@@ -214,43 +205,11 @@
 		return parts;
 	}
 
-	function occupancyLabel(status: string | undefined): { text: string; cls: string } {
-		if (!status) return { text: '', cls: '' };
-		switch (status) {
-			case 'MANY_SEATS_AVAILABLE':
-				return { text: '▪ SEATS AVAIL', cls: 'text-green-400' };
-			case 'FEW_SEATS_AVAILABLE':
-				return { text: '▪▪ FEW SEATS', cls: 'text-amber-400' };
-			case 'STANDING_ROOM_ONLY':
-				return { text: '▪▪▪ STANDING', cls: 'text-amber-400' };
-			case 'CRUSHED_STANDING_ROOM_ONLY':
-				return { text: '▪▪▪ FULL', cls: 'text-red-400' };
-			case 'FULL':
-				return { text: '▪▪▪ FULL', cls: 'text-red-400' };
-			case 'NOT_ACCEPTING_PASSENGERS':
-				return { text: '✕ NOT BOARDING', cls: 'text-red-500' };
-			default:
-				return { text: '', cls: '' };
-		}
-	}
-
 	function infoClass(info: string): string {
 		if (info.includes('PROCEED')) return 'text-green-400';
 		if (info.includes('WAIT')) return 'text-amber-400';
 		if (info.includes('CANCEL')) return 'text-red-500';
 		return 'text-gray-400';
-	}
-
-	function statusClass(d: Departure): string {
-		if (d.isCancelled) return 'text-red-500';
-		if (d.delayMinutes && d.delayMinutes > 0) return 'text-amber-400';
-		return 'text-green-400';
-	}
-
-	function statusText(d: Departure): string {
-		if (d.isCancelled) return 'CANCEL';
-		if (d.delayMinutes && d.delayMinutes > 0) return `+${d.delayMinutes}M`;
-		return 'ON TIME';
 	}
 
 	function marquee(node: HTMLElement) {

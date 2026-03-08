@@ -124,8 +124,9 @@ func (s *StaticStore) load(zipData []byte) error {
 		}
 	}
 
-	// --- Schedule index: stopID → []ScheduledDeparture ---
+	// --- Schedule index + trip index (single pass over trips) ---
 	stopIndex := make(map[string][]ScheduledDeparture)
+	tripIndex := make(map[string]TripInfo, len(static.Trips))
 	for i := range static.Trips {
 		trip := &static.Trips[i]
 		if trip.Route == nil || trip.Service == nil {
@@ -135,35 +136,19 @@ func (s *StaticStore) load(zipData []byte) error {
 		if headsign == "" {
 			headsign = trip.Route.LongName
 		}
-		for j := range trip.StopTimes {
-			st := &trip.StopTimes[j]
-			if st.Stop == nil {
-				continue
-			}
-			dep := ScheduledDeparture{
-				TripID:        trip.ID,
-				RouteID:       trip.Route.Id,
-				ServiceID:     trip.Service.Id,
-				Headsign:      headsign,
-				DepartureTime: st.DepartureTime,
-			}
-			stopIndex[st.Stop.Id] = append(stopIndex[st.Stop.Id], dep)
-		}
-	}
-
-	// --- Trip index: tripID → TripInfo (for departure enrichment) ---
-	tripIndex := make(map[string]TripInfo, len(static.Trips))
-	for i := range static.Trips {
-		trip := &static.Trips[i]
-		if trip.Route == nil || trip.Service == nil {
-			continue
-		}
 		tripStops := make([]TripStop, 0, len(trip.StopTimes))
 		for j := range trip.StopTimes {
 			st := &trip.StopTimes[j]
 			if st.Stop == nil {
 				continue
 			}
+			stopIndex[st.Stop.Id] = append(stopIndex[st.Stop.Id], ScheduledDeparture{
+				TripID:        trip.ID,
+				RouteID:       trip.Route.Id,
+				ServiceID:     trip.Service.Id,
+				Headsign:      headsign,
+				DepartureTime: st.DepartureTime,
+			})
 			tripStops = append(tripStops, TripStop{
 				StopID:        st.Stop.Id,
 				ArrivalTime:   st.ArrivalTime,

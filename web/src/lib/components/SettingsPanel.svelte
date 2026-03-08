@@ -55,8 +55,6 @@
 		commute.clear();
 		if (typeof localStorage !== 'undefined') {
 			localStorage.removeItem('notificationPrefs');
-			localStorage.removeItem('favorites');
-			localStorage.removeItem('defaultStation');
 		}
 		onClose();
 	}
