@@ -152,7 +152,6 @@
 			</button>
 		</div>
 
-
 		{#if activeTrip}
 			<!-- Route header -->
 			<div class="text-center">
@@ -200,13 +199,18 @@
 
 		<footer class="pt-2 pb-4 text-center max-w-xs mx-auto">
 			<p class="text-gray-500 text-[11px] font-mono leading-relaxed">
-				Real-time GO Transit tracking with live departures, delay alerts, and countdown timers for your daily commute.
+				Real-time GO Transit tracking with live departures, delay alerts, and countdown timers for
+				your daily commute.
 			</p>
 			<p class="text-gray-600 text-[10px] font-mono mt-3 leading-relaxed text-left">
-				View live departure times, platform info, and delay notifications for your saved commute. Visit the <a href="/board" class="text-amber-400 hover:text-amber-300 transition-colors">departure board</a> for a full split-flap display of upcoming trains at any station.
+				View live departure times, platform info, and delay notifications for your saved commute.
+				Visit the <a href="/board" class="text-amber-400 hover:text-amber-300 transition-colors"
+					>departure board</a
+				> for a full split-flap display of upcoming trains at any station.
 			</p>
 			<p class="text-gray-700 text-[9px] font-mono mt-3 leading-relaxed">
-				Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed. Always confirm with official sources before travelling.
+				Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
+				Always confirm with official sources before travelling.
 			</p>
 			<p class="text-gray-600 text-[10px] tracking-wide font-mono mt-3">
 				&copy; {new Date().getFullYear()}

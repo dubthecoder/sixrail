@@ -11,7 +11,7 @@ function getBaseUrl() {
 
 async function fetchApi<T>(path: string): Promise<T> {
 	const res = await fetch(`${getBaseUrl()}${path}`, {
-		signal: AbortSignal.timeout(5000),
+		signal: AbortSignal.timeout(5000)
 	});
 	if (!res.ok) {
 		throw new Error(`API error: ${res.status} ${res.statusText}`);

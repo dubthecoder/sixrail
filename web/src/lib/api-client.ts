@@ -70,7 +70,9 @@ export type FareInfo = {
 };
 
 export async function fetchFares(from: string, to: string): Promise<FareInfo[]> {
-	const res = await fetch(`/api/fares/${encodeURIComponent(from)}/${encodeURIComponent(to)}`, { signal: AbortSignal.timeout(10000) });
+	const res = await fetch(`/api/fares/${encodeURIComponent(from)}/${encodeURIComponent(to)}`, {
+		signal: AbortSignal.timeout(10000)
+	});
 	if (!res.ok) return [];
 	return res.json();
 }

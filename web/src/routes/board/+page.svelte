@@ -29,7 +29,9 @@
 
 	let isFullscreen = $state(false);
 	let polledDepartures = $state<UnionDeparture[] | null>(null);
-	let departures = $derived(sortByTime(polledDepartures ?? data.departures).slice(0, isFullscreen ? 10 : 15));
+	let departures = $derived(
+		sortByTime(polledDepartures ?? data.departures).slice(0, isFullscreen ? 10 : 15)
+	);
 	let clock = $state('');
 	let clockInterval: ReturnType<typeof setInterval>;
 	let pollInterval: ReturnType<typeof setInterval>;
@@ -74,7 +76,9 @@
 	// All GTFS departures for the active stop (station view)
 	let allGtfsDepartures = $state<Departure[]>([]);
 
-	let trainDepartures = $derived(allGtfsDepartures.filter((d) => d.routeType !== 3).slice(0, isFullscreen ? 10 : 15));
+	let trainDepartures = $derived(
+		allGtfsDepartures.filter((d) => d.routeType !== 3).slice(0, isFullscreen ? 10 : 15)
+	);
 
 	let loadController: AbortController | null = null;
 
@@ -196,11 +200,15 @@
 
 	type MetaPart = { text: string; cls: string };
 
-	function buildMetaParts(dep: { isInMotion?: boolean; alert?: string; stops?: string[] }, occ: { text: string; cls: string }): MetaPart[] {
+	function buildMetaParts(
+		dep: { isInMotion?: boolean; alert?: string; stops?: string[] },
+		occ: { text: string; cls: string }
+	): MetaPart[] {
 		const parts: MetaPart[] = [];
 		if (dep.isInMotion) parts.push({ text: 'EN ROUTE', cls: 'text-green-400' });
 		if (occ.text) parts.push({ text: occ.text, cls: occ.cls });
-		if (dep.stops && dep.stops.length > 0) parts.push({ text: dep.stops.join(' · '), cls: 'text-gray-400' });
+		if (dep.stops && dep.stops.length > 0)
+			parts.push({ text: dep.stops.join(' · '), cls: 'text-gray-400' });
 		return parts;
 	}
 
@@ -242,7 +250,6 @@
 		if (d.delayMinutes && d.delayMinutes > 0) return `+${d.delayMinutes}M`;
 		return 'ON TIME';
 	}
-
 
 	function marquee(node: HTMLElement) {
 		const inner = node.querySelector('.stops-scroll') as HTMLElement;
@@ -291,7 +298,9 @@
 			</div>
 		{/if}
 		<div class="flex items-center gap-0.5em">
-			<div class="text-amber-400 tracking-widest tabular-nums" style="font-size: 1.1em;">{clock}</div>
+			<div class="text-amber-400 tracking-widest tabular-nums" style="font-size: 1.1em;">
+				{clock}
+			</div>
 			<button
 				class="fullscreen-btn"
 				onclick={toggleFullscreen}
@@ -299,9 +308,17 @@
 				title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen (TV mode)'}
 			>
 				{#if isFullscreen}
-					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"
+						><path
+							d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
+						/></svg
+					>
 				{:else}
-					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"
+						><path
+							d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+						/></svg
+					>
 				{/if}
 			</button>
 		</div>
@@ -354,140 +371,146 @@
 	</div>
 
 	{#if !selectedStation}
-			<!-- Union Station trains (Metrolinx API) -->
-			<div class="col-headers flap-row">
-				<span class="col-time text-amber-400">TIME</span>
-				<span class="col-service text-white">SERVICE</span>
-				<span class="col-cars text-gray-400">CRS</span>
-				<span class="col-plat text-white">PLATFRM</span>
-				<span class="col-info text-gray-400">STATUS</span>
-			</div>
+		<!-- Union Station trains (Metrolinx API) -->
+		<div class="col-headers flap-row">
+			<span class="col-time text-amber-400">TIME</span>
+			<span class="col-service text-white">SERVICE</span>
+			<span class="col-cars text-gray-400">CRS</span>
+			<span class="col-plat text-white">PLATFRM</span>
+			<span class="col-info text-gray-400">STATUS</span>
+		</div>
 
-			<div class="rows">
-				{#each departures as dep, i}
-					{@const occ = occupancyLabel(dep.occupancy)}
-					{@const metaParts = buildMetaParts(dep, occ)}
-					<div class="departure-row" class:cancelled={dep.isCancelled}>
-						<div class="flap-row">
-							<span class="col-time text-amber-400">
-								{#each padRight(dep.time, 5).split('') as char, j}
-									<SplitFlapChar value={char} delay={j * 15} />
-								{/each}
-							</span>
+		<div class="rows">
+			{#each departures as dep, i}
+				{@const occ = occupancyLabel(dep.occupancy)}
+				{@const metaParts = buildMetaParts(dep, occ)}
+				<div class="departure-row" class:cancelled={dep.isCancelled}>
+					<div class="flap-row">
+						<span class="col-time text-amber-400">
+							{#each padRight(dep.time, 5).split('') as char, j}
+								<SplitFlapChar value={char} delay={j * 15} />
+							{/each}
+						</span>
 
-							<span class="col-service text-white">
-								{#each padRight(dep.service, 15).split('') as char, j}
-									<SplitFlapChar value={char} delay={20 + j * 10} />
-								{/each}
-								{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
-							</span>
+						<span class="col-service text-white">
+							{#each padRight(dep.service, 15).split('') as char, j}
+								<SplitFlapChar value={char} delay={20 + j * 10} />
+							{/each}
+							{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
+						</span>
 
-							<span class="col-cars text-gray-400">
-								{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
-									<SplitFlapChar value={char} delay={40 + j * 15} />
-								{/each}
-							</span>
+						<span class="col-cars text-gray-400">
+							{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
+								<SplitFlapChar value={char} delay={40 + j * 15} />
+							{/each}
+						</span>
 
-							<span class="col-plat text-white">
-								{#each padCenter(dep.platform || '--', 7).split('') as char, j}
-									<SplitFlapChar value={char} delay={50 + j * 12} />
-								{/each}
-							</span>
+						<span class="col-plat text-white">
+							{#each padCenter(dep.platform || '--', 7).split('') as char, j}
+								<SplitFlapChar value={char} delay={50 + j * 12} />
+							{/each}
+						</span>
 
-							<span class="col-info {infoClass(dep.info)}">
-								{#each padRight(dep.isCancelled ? 'CANCEL' : dep.info, 7).split('') as char, j}
-									<SplitFlapChar value={char} delay={60 + j * 10} />
+						<span class="col-info {infoClass(dep.info)}">
+							{#each padRight(dep.isCancelled ? 'CANCEL' : dep.info, 7).split('') as char, j}
+								<SplitFlapChar value={char} delay={60 + j * 10} />
+							{/each}
+						</span>
+					</div>
+
+					{#if metaParts.length > 0}
+						<div class="meta-line" use:marquee>
+							<span class="stops-scroll">
+								{#each metaParts as part, pi}
+									{#if pi > 0}<span class="text-gray-600"> · </span>{/if}
+									<span class={part.cls}>{part.text.toUpperCase()}</span>
 								{/each}
 							</span>
 						</div>
+					{/if}
+				</div>
+			{/each}
 
-						{#if metaParts.length > 0}
-							<div class="meta-line" use:marquee>
-								<span class="stops-scroll">
-									{#each metaParts as part, pi}
-										{#if pi > 0}<span class="text-gray-600">  ·  </span>{/if}
-										<span class={part.cls}>{part.text.toUpperCase()}</span>
-									{/each}
-								</span>
-							</div>
-						{/if}
+			{#if departures.length === 0}
+				<div
+					class="text-gray-700 font-mono text-center tracking-widest uppercase"
+					style="font-size: 0.8em; padding: 2em 0;"
+				>
+					No departures
+				</div>
+			{/if}
+		</div>
+	{:else}
+		<!-- Station trains (GTFS) -->
+		<div class="col-headers flap-row-station">
+			<span class="col-time text-amber-400">TIME</span>
+			<span class="col-line text-white">LINE</span>
+			<span class="col-cars text-gray-400">CRS</span>
+			<span class="col-plat text-white">PLATFRM</span>
+			<span class="col-status text-gray-400">STATUS</span>
+		</div>
+
+		<div class="rows">
+			{#each trainDepartures as dep, i}
+				{@const occ = occupancyLabel(dep.occupancy)}
+				{@const metaParts = buildMetaParts(dep, occ)}
+				<div class="departure-row" class:cancelled={dep.isCancelled}>
+					<div class="flap-row-station">
+						<span class="col-time text-amber-400">
+							{#each padRight(dep.scheduledTime.slice(0, 5), 5).split('') as char, j}
+								<SplitFlapChar value={char} delay={j * 15} />
+							{/each}
+						</span>
+
+						<span class="col-line text-white">
+							{#each padRight(dep.lineName || dep.line, 15).split('') as char, j}
+								<SplitFlapChar value={char} delay={20 + j * 10} />
+							{/each}
+							{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
+						</span>
+
+						<span class="col-cars text-gray-400">
+							{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
+								<SplitFlapChar value={char} delay={40 + j * 15} />
+							{/each}
+						</span>
+
+						<span class="col-plat text-white">
+							{#each padCenter(dep.platform || '--', 7).split('') as char, j}
+								<SplitFlapChar value={char} delay={50 + j * 12} />
+							{/each}
+						</span>
+
+						<span class="col-status {statusClass(dep)}">
+							{#each padRight(statusText(dep), 7).split('') as char, j}
+								<SplitFlapChar value={char} delay={60 + j * 10} />
+							{/each}
+						</span>
 					</div>
-				{/each}
 
-				{#if departures.length === 0}
-					<div class="text-gray-700 font-mono text-center tracking-widest uppercase" style="font-size: 0.8em; padding: 2em 0;">
-						No departures
-					</div>
-				{/if}
-			</div>
-		{:else}
-			<!-- Station trains (GTFS) -->
-			<div class="col-headers flap-row-station">
-				<span class="col-time text-amber-400">TIME</span>
-				<span class="col-line text-white">LINE</span>
-				<span class="col-cars text-gray-400">CRS</span>
-				<span class="col-plat text-white">PLATFRM</span>
-				<span class="col-status text-gray-400">STATUS</span>
-			</div>
-
-			<div class="rows">
-				{#each trainDepartures as dep, i}
-					{@const occ = occupancyLabel(dep.occupancy)}
-					{@const metaParts = buildMetaParts(dep, occ)}
-					<div class="departure-row" class:cancelled={dep.isCancelled}>
-						<div class="flap-row-station">
-							<span class="col-time text-amber-400">
-								{#each padRight(dep.scheduledTime.slice(0, 5), 5).split('') as char, j}
-									<SplitFlapChar value={char} delay={j * 15} />
-								{/each}
-							</span>
-
-							<span class="col-line text-white">
-								{#each padRight(dep.lineName || dep.line, 15).split('') as char, j}
-									<SplitFlapChar value={char} delay={20 + j * 10} />
-								{/each}
-								{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
-							</span>
-
-							<span class="col-cars text-gray-400">
-								{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
-									<SplitFlapChar value={char} delay={40 + j * 15} />
-								{/each}
-							</span>
-
-							<span class="col-plat text-white">
-								{#each padCenter(dep.platform || '--', 7).split('') as char, j}
-									<SplitFlapChar value={char} delay={50 + j * 12} />
-								{/each}
-							</span>
-
-							<span class="col-status {statusClass(dep)}">
-								{#each padRight(statusText(dep), 7).split('') as char, j}
-									<SplitFlapChar value={char} delay={60 + j * 10} />
+					{#if metaParts.length > 0}
+						<div class="meta-line" use:marquee>
+							<span class="stops-scroll">
+								{#each metaParts as part, pi}
+									{#if pi > 0}<span class="text-gray-600"> · </span>{/if}
+									<span class={part.cls}>{part.text.toUpperCase()}</span>
 								{/each}
 							</span>
 						</div>
+					{/if}
+				</div>
+			{/each}
 
-						{#if metaParts.length > 0}
-							<div class="meta-line" use:marquee>
-								<span class="stops-scroll">
-									{#each metaParts as part, pi}
-										{#if pi > 0}<span class="text-gray-600">  ·  </span>{/if}
-										<span class={part.cls}>{part.text.toUpperCase()}</span>
-									{/each}
-								</span>
-							</div>
-						{/if}
-					</div>
-				{/each}
-
-				{#if trainDepartures.length === 0}
-					<div class="text-gray-700 font-mono text-center tracking-widest uppercase" style="font-size: 0.8em; padding: 2em 0;">
-						No train departures
-					</div>
-				{/if}
-			</div>
-		{/if}
+			{#if trainDepartures.length === 0}
+				<div
+					class="text-gray-700 font-mono text-center tracking-widest uppercase"
+					style="font-size: 0.8em; padding: 2em 0;"
+				>
+					No train departures
+				</div>
+			{/if}
+		</div>
+	{/if}
 </div>
 
 <style>

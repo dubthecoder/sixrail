@@ -39,24 +39,32 @@
 	function occupancyIcon(status: string | undefined): string {
 		if (!status) return '';
 		switch (status) {
-			case 'MANY_SEATS_AVAILABLE': return '\u25CB';
-			case 'FEW_SEATS_AVAILABLE': return '\u25D1';
+			case 'MANY_SEATS_AVAILABLE':
+				return '\u25CB';
+			case 'FEW_SEATS_AVAILABLE':
+				return '\u25D1';
 			case 'STANDING_ROOM_ONLY':
 			case 'CRUSHED_STANDING_ROOM_ONLY':
-			case 'FULL': return '\u25CF';
-			default: return '';
+			case 'FULL':
+				return '\u25CF';
+			default:
+				return '';
 		}
 	}
 
 	function occupancyClass(status: string | undefined): string {
 		if (!status) return '';
 		switch (status) {
-			case 'MANY_SEATS_AVAILABLE': return 'text-green-400';
-			case 'FEW_SEATS_AVAILABLE': return 'text-amber-400';
+			case 'MANY_SEATS_AVAILABLE':
+				return 'text-green-400';
+			case 'FEW_SEATS_AVAILABLE':
+				return 'text-amber-400';
 			case 'STANDING_ROOM_ONLY':
 			case 'CRUSHED_STANDING_ROOM_ONLY':
-			case 'FULL': return 'text-red-400';
-			default: return '';
+			case 'FULL':
+				return 'text-red-400';
+			default:
+				return '';
 		}
 	}
 
@@ -112,10 +120,7 @@
 				{/each}
 			</span>
 
-			<span
-				class="col-occ {occupancyClass(dep.occupancy)}"
-				title={dep.occupancy ?? ''}
-			>
+			<span class="col-occ {occupancyClass(dep.occupancy)}" title={dep.occupancy ?? ''}>
 				{occupancyIcon(dep.occupancy)}
 			</span>
 

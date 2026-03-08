@@ -30,13 +30,19 @@
 		let current = displayValue.toUpperCase();
 		let steps = 0;
 		while (current !== targetUpper && steps < CHARS.length) {
-			if (gen !== flipGeneration) { isFlipping = false; return; }
+			if (gen !== flipGeneration) {
+				isFlipping = false;
+				return;
+			}
 			current = getNextChar(current);
 			steps++;
 			topValue = current;
 			isFlipping = true;
 			await new Promise((r) => setTimeout(r, 25));
-			if (gen !== flipGeneration) { isFlipping = false; return; }
+			if (gen !== flipGeneration) {
+				isFlipping = false;
+				return;
+			}
 			isFlipping = false;
 			bottomValue = current;
 			displayValue = current;
