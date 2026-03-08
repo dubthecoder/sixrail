@@ -3,8 +3,10 @@
 	import {
 		fetchUnionDepartures,
 		fetchDepartures,
+		fetchNetworkHealth,
 		type UnionDeparture,
-		type Departure
+		type Departure,
+		type NetworkLine
 	} from '$lib/api-client';
 	import type { Stop } from '$lib/api';
 	import SplitFlapChar from '$lib/components/SplitFlapChar.svelte';
@@ -26,14 +28,18 @@
 	}
 
 	let polledDepartures = $state<UnionDeparture[] | null>(null);
-	let departures = $derived(sortByTime(polledDepartures ?? data.departures).slice(0, 10));
+	let departures = $derived(sortByTime(polledDepartures ?? data.departures).slice(0, 15));
 	let clock = $state('');
 	let clockInterval: ReturnType<typeof setInterval>;
 	let pollInterval: ReturnType<typeof setInterval>;
+	let healthInterval: ReturnType<typeof setInterval>;
+	let networkHealth = $state<NetworkLine[]>([]);
+
+	// Tabs
+	let activeTab = $state<'trains' | 'buses'>('trains');
 
 	// Station dropdown
 	let selectedStation = $state('');
-	let stationDepartures = $state<Departure[]>([]);
 	let dropdownOpen = $state(false);
 	let searchQuery = $state('');
 
@@ -58,24 +64,35 @@
 		});
 	}
 
+	function sortByScheduledTime(deps: Departure[]): Departure[] {
+		const nowH = new Date().getHours();
+		const toMin = (t: string) => {
+			const h = parseInt(t.slice(0, 2), 10);
+			return (h < 6 && nowH >= 12 ? h + 24 : h) * 60 + parseInt(t.slice(3, 5), 10);
+		};
+		return [...deps].sort((a, b) => toMin(a.scheduledTime) - toMin(b.scheduledTime));
+	}
+
+	// All GTFS departures for the active stop (used for bus filtering + station view)
+	let allGtfsDepartures = $state<Departure[]>([]);
+
+	let trainDepartures = $derived(allGtfsDepartures.filter((d) => d.routeType !== 3).slice(0, 15));
+	let busDepartures = $derived(allGtfsDepartures.filter((d) => d.routeType === 3).slice(0, 15));
+
 	async function loadDepartures() {
-		if (selectedStation) {
-			const deps = await fetchDepartures(selectedStation);
-			const nowH = new Date().getHours();
-			const toMin = (t: string) => {
-				const h = parseInt(t.slice(0, 2), 10);
-				return (h < 6 && nowH >= 12 ? h + 24 : h) * 60 + parseInt(t.slice(3, 5), 10);
-			};
-			stationDepartures = deps.sort((a, b) => toMin(a.scheduledTime) - toMin(b.scheduledTime)).slice(0, 10);
-		} else {
-			const deps = await fetchUnionDepartures();
-			if (deps.length > 0) polledDepartures = deps;
+		const stopCode = selectedStation || 'UN';
+		const deps = await fetchDepartures(stopCode);
+		allGtfsDepartures = sortByScheduledTime(deps);
+
+		if (!selectedStation) {
+			const unionDeps = await fetchUnionDepartures();
+			if (unionDeps.length > 0) polledDepartures = unionDeps;
 		}
 	}
 
 	function selectStation(stop: Stop) {
 		selectedStation = stop.code || stop.id;
-		stationDepartures = [];
+		allGtfsDepartures = [];
 		dropdownOpen = false;
 		searchQuery = '';
 		loadDepartures();
@@ -83,25 +100,75 @@
 
 	function clearStation() {
 		selectedStation = '';
-		stationDepartures = [];
+		allGtfsDepartures = [];
 		dropdownOpen = false;
 		searchQuery = '';
 		loadDepartures();
 	}
 
+	async function loadNetworkHealth() {
+		try {
+			networkHealth = await fetchNetworkHealth();
+		} catch {
+			// keep existing data on error
+		}
+	}
+
+	let isFullscreen = $state(false);
+
+	function toggleFullscreen() {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen();
+		} else {
+			document.exitFullscreen();
+		}
+	}
+
+	let boardEl: HTMLElement;
+
+	function fitFullscreen() {
+		if (!boardEl || !isFullscreen) {
+			if (boardEl) boardEl.style.fontSize = '';
+			return;
+		}
+		boardEl.style.fontSize = '';
+		const base = parseFloat(getComputedStyle(boardEl).fontSize);
+		const available = window.innerHeight;
+		const content = boardEl.scrollHeight;
+		if (content > available) {
+			boardEl.style.fontSize = `${base * (available / content)}px`;
+		}
+	}
+
+	function onFullscreenChange() {
+		isFullscreen = !!document.fullscreenElement;
+		document.body.classList.toggle('is-fullscreen', isFullscreen);
+		requestAnimationFrame(fitFullscreen);
+	}
+
+	$effect(() => {
+		departures;
+		allGtfsDepartures;
+		if (isFullscreen && typeof window !== 'undefined') {
+			requestAnimationFrame(fitFullscreen);
+		}
+	});
+
 	onMount(() => {
 		updateClock();
 		clockInterval = setInterval(updateClock, 1000);
 		pollInterval = setInterval(loadDepartures, 30_000);
-		fitBoard();
-		window.addEventListener('resize', fitBoard);
+		loadNetworkHealth();
+		healthInterval = setInterval(loadNetworkHealth, 30_000);
+		document.addEventListener('fullscreenchange', onFullscreenChange);
 	});
 
 	onDestroy(() => {
 		clearInterval(clockInterval);
 		clearInterval(pollInterval);
-		if (typeof window !== 'undefined') {
-			window.removeEventListener('resize', fitBoard);
+		clearInterval(healthInterval);
+		if (typeof document !== 'undefined') {
+			document.removeEventListener('fullscreenchange', onFullscreenChange);
 		}
 	});
 
@@ -113,6 +180,16 @@
 		const s = str.toUpperCase().slice(0, len);
 		const left = Math.floor((len - s.length) / 2);
 		return s.padStart(s.length + left, ' ').padEnd(len, ' ');
+	}
+
+	type MetaPart = { text: string; cls: string };
+
+	function buildMetaParts(dep: { isInMotion?: boolean; alert?: string; stops?: string[] }, occ: { text: string; cls: string }): MetaPart[] {
+		const parts: MetaPart[] = [];
+		if (dep.isInMotion) parts.push({ text: 'EN ROUTE', cls: 'text-green-400' });
+		if (occ.text) parts.push({ text: occ.text, cls: occ.cls });
+		if (dep.stops && dep.stops.length > 0) parts.push({ text: dep.stops.join(' · '), cls: 'text-gray-400' });
+		return parts;
 	}
 
 	function occupancyLabel(status: string | undefined): { text: string; cls: string } {
@@ -154,31 +231,6 @@
 		return 'ON TIME';
 	}
 
-	let boardEl: HTMLElement;
-
-	function fitBoard() {
-		if (!boardEl) return;
-		// Reset to base size first
-		boardEl.style.fontSize = '';
-		// Get the computed base font size
-		const base = parseFloat(getComputedStyle(boardEl).fontSize);
-		// Use the board's actual available height (accounts for nav bars, bottom bars, etc.)
-		const available = boardEl.clientHeight;
-		const content = boardEl.scrollHeight;
-		if (content > available) {
-			const scale = available / content;
-			boardEl.style.fontSize = `${base * scale}px`;
-		}
-	}
-
-	// Re-fit when departures change (client-side only)
-	$effect(() => {
-		departures;
-		stationDepartures;
-		if (typeof window !== 'undefined') {
-			requestAnimationFrame(fitBoard);
-		}
-	});
 
 	function marquee(node: HTMLElement) {
 		const inner = node.querySelector('.stops-scroll') as HTMLElement;
@@ -214,7 +266,31 @@
 			</h1>
 			<p class="text-gray-600 tracking-widest uppercase" style="font-size: 0.6em;">Departures</p>
 		</div>
-		<div class="text-amber-400 tracking-widest tabular-nums" style="font-size: 1.1em;">{clock}</div>
+		{#if networkHealth.length > 0}
+			<div class="network-health">
+				{#each networkHealth.toSorted((a, b) => a.lineCode.localeCompare(b.lineCode)) as line}
+					<div class="health-pill" title="{line.lineName}: {line.activeTrips} active trains">
+						<span class="text-gray-400">{line.lineCode}</span>
+						<span class="text-green-400 font-bold">{line.activeTrips}</span>
+					</div>
+				{/each}
+			</div>
+		{/if}
+		<div class="flex items-center gap-0.5em">
+			<div class="text-amber-400 tracking-widest tabular-nums" style="font-size: 1.1em;">{clock}</div>
+			<button
+				class="fullscreen-btn"
+				onclick={toggleFullscreen}
+				aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+				title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen (TV mode)'}
+			>
+				{#if isFullscreen}
+					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+				{:else}
+					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+				{/if}
+			</button>
+		</div>
 		<div class="station-picker relative">
 			{#if selectedStation}
 				<button
@@ -263,19 +339,162 @@
 		</div>
 	</div>
 
-	{#if selectedStation}
-		<!-- Station departures view -->
+	<!-- Tabs -->
+	<div class="tab-bar" class:hidden={isFullscreen}>
+		<button class="tab" class:active={activeTab === 'trains'} onclick={() => (activeTab = 'trains')}>
+			Trains
+		</button>
+		<button class="tab" class:active={activeTab === 'buses'} onclick={() => (activeTab = 'buses')}>
+			Buses
+		</button>
+	</div>
+
+	{#if activeTab === 'trains'}
+		{#if !selectedStation}
+			<!-- Union Station trains (Metrolinx API) -->
+			<div class="col-headers flap-row">
+				<span class="col-time text-amber-400">TIME</span>
+				<span class="col-service text-white">SERVICE</span>
+				<span class="col-cars text-gray-400">CRS</span>
+				<span class="col-plat text-white">PLATFRM</span>
+				<span class="col-info text-gray-400">STATUS</span>
+			</div>
+
+			<div class="rows">
+				{#each departures as dep, i}
+					{@const occ = occupancyLabel(dep.occupancy)}
+					{@const metaParts = buildMetaParts(dep, occ)}
+					<div class="departure-row" class:cancelled={dep.isCancelled}>
+						<div class="flap-row">
+							<span class="col-time text-amber-400">
+								{#each padRight(dep.time, 5).split('') as char, j}
+									<SplitFlapChar value={char} delay={j * 15} />
+								{/each}
+							</span>
+
+							<span class="col-service text-white">
+								{#each padRight(dep.service, 14).split('') as char, j}
+									<SplitFlapChar value={char} delay={20 + j * 10} />
+								{/each}
+								{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
+							</span>
+
+							<span class="col-cars text-gray-400">
+								{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
+									<SplitFlapChar value={char} delay={40 + j * 15} />
+								{/each}
+							</span>
+
+							<span class="col-plat text-white">
+								{#each padCenter(dep.platform || '--', 7).split('') as char, j}
+									<SplitFlapChar value={char} delay={50 + j * 12} />
+								{/each}
+							</span>
+
+							<span class="col-info {infoClass(dep.info)}">
+								{#each padRight(dep.isCancelled ? 'CANCEL' : dep.info, 7).split('') as char, j}
+									<SplitFlapChar value={char} delay={60 + j * 10} />
+								{/each}
+							</span>
+						</div>
+
+						{#if metaParts.length > 0}
+							<div class="meta-line">
+								{#each metaParts as part, pi}
+									{#if pi > 0}<span class="text-gray-600">  ·  </span>{/if}
+									<span class={part.cls}>{part.text.toUpperCase()}</span>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/each}
+
+				{#if departures.length === 0}
+					<div class="text-gray-700 font-mono text-center tracking-widest uppercase" style="font-size: 0.8em; padding: 2em 0;">
+						No departures
+					</div>
+				{/if}
+			</div>
+		{:else}
+			<!-- Station trains (GTFS) -->
+			<div class="col-headers flap-row-station">
+				<span class="col-time text-amber-400">TIME</span>
+				<span class="col-line text-white">LINE</span>
+				<span class="col-cars text-gray-400">CRS</span>
+				<span class="col-plat text-white">PLATFRM</span>
+				<span class="col-status text-gray-400">STATUS</span>
+			</div>
+
+			<div class="rows">
+				{#each trainDepartures as dep, i}
+					{@const occ = occupancyLabel(dep.occupancy)}
+					{@const metaParts = buildMetaParts(dep, occ)}
+					<div class="departure-row" class:cancelled={dep.isCancelled}>
+						<div class="flap-row-station">
+							<span class="col-time text-amber-400">
+								{#each padRight(dep.scheduledTime.slice(0, 5), 5).split('') as char, j}
+									<SplitFlapChar value={char} delay={j * 15} />
+								{/each}
+							</span>
+
+							<span class="col-line text-white">
+								{#each padRight(dep.lineName || dep.line, 14).split('') as char, j}
+									<SplitFlapChar value={char} delay={20 + j * 10} />
+								{/each}
+								{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
+							</span>
+
+							<span class="col-cars text-gray-400">
+								{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
+									<SplitFlapChar value={char} delay={40 + j * 15} />
+								{/each}
+							</span>
+
+							<span class="col-plat text-white">
+								{#each padCenter(dep.platform || '--', 7).split('') as char, j}
+									<SplitFlapChar value={char} delay={50 + j * 12} />
+								{/each}
+							</span>
+
+							<span class="col-status {statusClass(dep)}">
+								{#each padRight(statusText(dep), 7).split('') as char, j}
+									<SplitFlapChar value={char} delay={60 + j * 10} />
+								{/each}
+							</span>
+						</div>
+
+						{#if metaParts.length > 0}
+							<div class="meta-line">
+								{#each metaParts as part, pi}
+									{#if pi > 0}<span class="text-gray-600">  ·  </span>{/if}
+									<span class={part.cls}>{part.text.toUpperCase()}</span>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/each}
+
+				{#if trainDepartures.length === 0}
+					<div class="text-gray-700 font-mono text-center tracking-widest uppercase" style="font-size: 0.8em; padding: 2em 0;">
+						No train departures
+					</div>
+				{/if}
+			</div>
+		{/if}
+	{:else}
+		<!-- Buses tab -->
 		<div class="col-headers flap-row-station">
 			<span class="col-time text-amber-400">TIME</span>
-			<span class="col-line text-white">LINE</span>
+			<span class="col-line text-white">ROUTE</span>
 			<span class="col-cars text-gray-400">CRS</span>
 			<span class="col-plat text-white">PLATFRM</span>
 			<span class="col-status text-gray-400">STATUS</span>
 		</div>
 
 		<div class="rows">
-			{#each stationDepartures as dep, i}
+			{#each busDepartures as dep, i}
 				{@const occ = occupancyLabel(dep.occupancy)}
+				{@const metaParts = buildMetaParts(dep, occ)}
 				<div class="departure-row" class:cancelled={dep.isCancelled}>
 					<div class="flap-row-station">
 						<span class="col-time text-amber-400">
@@ -285,14 +504,14 @@
 						</span>
 
 						<span class="col-line text-white">
-							{#if dep.alert}<span class="text-amber-400" title="Service alert">!</span>{/if}
-							{#each padRight(dep.lineName || dep.line, dep.alert ? 13 : 14).split('') as char, j}
+							{#each padRight(dep.lineName || dep.line, 14).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
+							{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
 						</span>
 
 						<span class="col-cars text-gray-400">
-							{#each padRight(dep.cars ? dep.cars + 'C' : '---', 3).split('') as char, j}
+							{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
 								<SplitFlapChar value={char} delay={40 + j * 15} />
 							{/each}
 						</span>
@@ -310,100 +529,20 @@
 						</span>
 					</div>
 
-					<div class="meta-line">
-						{#if dep.isInMotion}
-							<span class="text-green-400">EN ROUTE</span>
-						{/if}
-						{#if occ.text}
-							<span class={occ.cls} title={dep.occupancy}>{occ.text}</span>
-						{/if}
-						{#if dep.stops && dep.stops.length > 0}
-							<span class="stops-line text-gray-400 tracking-wide" use:marquee>
-								<span class="stops-scroll">{dep.stops.join(' · ')}</span>
-							</span>
-						{/if}
-					</div>
-					{#if dep.alert}
-						<div class="alert-line text-amber-400">⚠ {dep.alert}</div>
+					{#if metaParts.length > 0}
+						<div class="meta-line">
+							{#each metaParts as part, pi}
+								{#if pi > 0}<span class="text-gray-600">  ·  </span>{/if}
+								<span class={part.cls}>{part.text.toUpperCase()}</span>
+							{/each}
+						</div>
 					{/if}
 				</div>
 			{/each}
 
-			{#if stationDepartures.length === 0}
+			{#if busDepartures.length === 0}
 				<div class="text-gray-700 font-mono text-center tracking-widest uppercase" style="font-size: 0.8em; padding: 2em 0;">
-					No departures
-				</div>
-			{/if}
-		</div>
-	{:else}
-		<!-- Union Station departures view -->
-		<div class="col-headers flap-row">
-			<span class="col-time text-amber-400">TIME</span>
-			<span class="col-service text-white">SERVICE</span>
-			<span class="col-cars text-gray-400">CRS</span>
-			<span class="col-plat text-white">PLATFRM</span>
-			<span class="col-info text-gray-400">STATUS</span>
-		</div>
-
-		<div class="rows">
-			{#each departures as dep, i}
-				{@const occ = occupancyLabel(dep.occupancy)}
-				<div class="departure-row" class:cancelled={dep.isCancelled}>
-					<div class="flap-row">
-						<span class="col-time text-amber-400">
-							{#each padRight(dep.time, 5).split('') as char, j}
-								<SplitFlapChar value={char} delay={j * 15} />
-							{/each}
-						</span>
-
-						<span class="col-service text-white">
-							{#if dep.alert}<span class="text-amber-400" title="Service alert">!</span>{/if}
-							{#each padRight(dep.service, dep.alert ? 15 : 16).split('') as char, j}
-								<SplitFlapChar value={char} delay={20 + j * 10} />
-							{/each}
-						</span>
-
-						<span class="col-cars text-gray-400">
-							{#each padRight(dep.cars ? dep.cars + 'C' : '---', 3).split('') as char, j}
-								<SplitFlapChar value={char} delay={40 + j * 15} />
-							{/each}
-						</span>
-
-						<span class="col-plat text-white">
-							{#each padCenter(dep.platform || '--', 7).split('') as char, j}
-								<SplitFlapChar value={char} delay={50 + j * 12} />
-							{/each}
-						</span>
-
-						<span class="col-info {infoClass(dep.info)}">
-							{#each padRight(dep.isCancelled ? 'CANCEL' : dep.info, 7).split('') as char, j}
-								<SplitFlapChar value={char} delay={60 + j * 10} />
-							{/each}
-						</span>
-					</div>
-
-					<div class="meta-line">
-						{#if dep.isInMotion}
-							<span class="text-green-400">EN ROUTE</span>
-						{/if}
-						{#if occ.text}
-							<span class={occ.cls} title={dep.occupancy}>{occ.text}</span>
-						{/if}
-						{#if dep.stops.length > 0}
-							<span class="stops-line text-gray-400 tracking-wide" use:marquee>
-								<span class="stops-scroll">{dep.stops.join(' · ')}</span>
-							</span>
-						{/if}
-					</div>
-					{#if dep.alert}
-						<div class="alert-line text-amber-400">⚠ {dep.alert}</div>
-					{/if}
-				</div>
-			{/each}
-
-			{#if departures.length === 0}
-				<div class="text-gray-700 font-mono text-center tracking-widest uppercase" style="font-size: 0.8em; padding: 2em 0;">
-					No departures
+					No bus departures
 				</div>
 			{/if}
 		</div>
@@ -411,14 +550,38 @@
 </div>
 
 <style>
+	/* ── Fullscreen ── */
+	:global(body.is-fullscreen) {
+		padding-bottom: 0 !important;
+		overflow: hidden !important;
+	}
+
+	:global(body.is-fullscreen .bottom-nav) {
+		display: none !important;
+	}
+
+	.fullscreen-btn {
+		background: none;
+		border: none;
+		color: #555;
+		font-size: 1em;
+		cursor: pointer;
+		padding: 0.1em;
+		line-height: 1;
+		transition: color 0.15s;
+		font-family: inherit;
+	}
+
+	.fullscreen-btn:hover {
+		color: #fbbf24;
+	}
+
 	/* ── Viewport-scaling board ── */
 	.board {
-		height: calc(100dvh - 60px);
+		min-height: calc(100dvh - 60px);
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
-		/* Scale base font with viewport — works from phone to TV */
-		font-size: clamp(14px, 2.4vw, 48px);
+		font-size: clamp(12px, 2.1vw, 42px);
 	}
 
 	.board-header {
@@ -428,6 +591,61 @@
 		padding: 0.4em 0.8em;
 		border-bottom: 1px solid #1a1a1a;
 		flex-shrink: 0;
+		flex-wrap: wrap;
+		gap: 0.3em;
+	}
+
+	.tab-bar.hidden {
+		display: none;
+	}
+
+	.tab-bar {
+		display: flex;
+		border-bottom: 1px solid #222;
+		flex-shrink: 0;
+		padding: 0 0.8em;
+	}
+
+	.tab {
+		flex: 1;
+		padding: 0.4em 0;
+		text-align: center;
+		font-size: 0.6em;
+		text-transform: uppercase;
+		letter-spacing: 0.15em;
+		color: #555;
+		background: none;
+		border: none;
+		border-bottom: 2px solid transparent;
+		cursor: pointer;
+		transition: color 0.15s, border-color 0.15s;
+		font-family: inherit;
+	}
+
+	.tab:hover {
+		color: #999;
+	}
+
+	.tab.active {
+		color: #fbbf24;
+		border-bottom-color: #fbbf24;
+	}
+
+	.network-health {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3em;
+		align-items: center;
+	}
+
+	.health-pill {
+		display: flex;
+		align-items: center;
+		gap: 0.2em;
+		padding: 0.1em 0.4em;
+		background: #1a1a1a;
+		border-radius: 3px;
+		font-size: 0.55em;
 	}
 
 	.col-headers {
@@ -488,7 +706,7 @@
 	}
 
 	.departure-row {
-		padding: 0.6em 0;
+		padding: 0.45em 0;
 	}
 
 	.departure-row.cancelled .col-time,
@@ -500,41 +718,21 @@
 		opacity: 0.4;
 	}
 
-	.meta-line {
-		display: flex;
-		align-items: center;
-		gap: 0.6em;
-		margin-top: 0.15em;
-		font-size: 0.55em;
-	}
-
-	.alert-line {
+	.alert-inline {
+		color: #fbbf24;
 		font-size: 0.5em;
-		margin-top: 0.15em;
+		margin-left: 0.3em;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	.stops-line {
+	.meta-line {
+		margin-top: 0.15em;
+		font-size: 0.55em;
 		overflow: hidden;
 		white-space: nowrap;
-		flex: 1;
-		min-width: 0;
-	}
-
-	.stops-scroll {
-		display: inline-block;
-		white-space: nowrap;
-	}
-
-	@keyframes boomerang {
-		0%, 20% {
-			transform: translateX(0);
-		}
-		80%, 100% {
-			transform: translateX(calc(-1 * var(--overflow, 0px)));
-		}
+		text-overflow: ellipsis;
 	}
 
 	/* ── Station dropdown ── */
@@ -622,7 +820,20 @@
 	/* ── Small screens ── */
 	@media (max-width: 480px) {
 		.board {
-			font-size: clamp(12px, 3.8vw, 20px);
+			font-size: clamp(11px, 3.5vw, 18px);
+		}
+
+		.board-header {
+			flex-wrap: wrap;
+			gap: 0.2em 0.5em;
+		}
+
+		.network-health {
+			order: 4;
+			width: 100%;
+			justify-content: center;
+			padding-top: 0.2em;
+			border-top: 1px solid #1a1a1a;
 		}
 
 		.flap-row {
@@ -638,7 +849,7 @@
 	/* ── Large screens / TV ── */
 	@media (min-width: 1400px) {
 		.board {
-			font-size: clamp(24px, 2.4vw, 60px);
+			font-size: clamp(20px, 2.1vw, 54px);
 		}
 	}
 </style>

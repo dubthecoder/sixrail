@@ -66,37 +66,13 @@
 <div class="split-flap-board font-mono select-none" role="region" aria-label="Departure board">
 	<!-- Header -->
 	<div class="board-row board-header-row">
-		<span class="col-time text-amber-400">
-			{#each padRight('TIME', 5).split('') as char}
-				<SplitFlapChar value={char} delay={0} />
-			{/each}
-		</span>
-		<span class="col-route text-white">
-			{#each padRight('ROUTE', 10).split('') as char}
-				<SplitFlapChar value={char} delay={0} />
-			{/each}
-		</span>
-		<span class="col-cars text-gray-400">
-			{#each padRight('CRS', 3).split('') as char}
-				<SplitFlapChar value={char} delay={0} />
-			{/each}
-		</span>
-		<span class="col-platform text-white">
-			{#each padCenter('PLATFRM', 7).split('') as char}
-				<SplitFlapChar value={char} delay={0} />
-			{/each}
-		</span>
-		<span class="col-arrival text-amber-300">
-			{#each padRight('ARRV', 5).split('') as char}
-				<SplitFlapChar value={char} delay={0} />
-			{/each}
-		</span>
+		<span class="col-time text-amber-400">TIME</span>
+		<span class="col-route text-white">LINE</span>
+		<span class="col-cars text-gray-400">CRS</span>
+		<span class="col-platform text-white">PLATFRM</span>
+		<span class="col-arrival text-amber-300">ARRV</span>
 		<span class="col-occ text-gray-400"></span>
-		<span class="col-status text-gray-400">
-			{#each padRight('STATUS', 11).split('') as char}
-				<SplitFlapChar value={char} delay={0} />
-			{/each}
-		</span>
+		<span class="col-status text-gray-400">STATUS</span>
 	</div>
 
 	<!-- Rows -->
@@ -108,31 +84,31 @@
 		>
 			<span class="col-time text-amber-400">
 				{#each formatTime(dep.scheduledTime).split('') as char, j}
-					<SplitFlapChar value={char} delay={j * 30} />
+					<SplitFlapChar value={char} delay={j * 15} />
 				{/each}
 			</span>
 
 			<span class="col-route text-white">
 				{#each padRight(dep.line, 10).split('') as char, j}
-					<SplitFlapChar value={char} delay={50 + j * 20} />
+					<SplitFlapChar value={char} delay={20 + j * 10} />
 				{/each}
 			</span>
 
 			<span class="col-cars text-gray-400">
 				{#each padRight(dep.cars ? dep.cars + 'C' : '---', 3).split('') as char, j}
-					<SplitFlapChar value={char} delay={80 + j * 20} />
+					<SplitFlapChar value={char} delay={40 + j * 15} />
 				{/each}
 			</span>
 
 			<span class="col-platform text-white">
 				{#each padCenter(dep.platform ?? '--', 7).split('') as char, j}
-					<SplitFlapChar value={char} delay={100 + j * 20} />
+					<SplitFlapChar value={char} delay={50 + j * 12} />
 				{/each}
 			</span>
 
 			<span class="col-arrival text-amber-300">
 				{#each padRight(dep.arrivalTime ?? '-----', 5).split('') as char, j}
-					<SplitFlapChar value={char} delay={110 + j * 25} />
+					<SplitFlapChar value={char} delay={60 + j * 10} />
 				{/each}
 			</span>
 
@@ -145,7 +121,7 @@
 
 			<span class="col-status {statusClass(dep)}">
 				{#each padRight(statusText(dep), 11).split('') as char, j}
-					<SplitFlapChar value={char} delay={120 + j * 15} />
+					<SplitFlapChar value={char} delay={70 + j * 10} />
 				{/each}
 			</span>
 		</div>

@@ -128,6 +128,7 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 			RouteColor:    route.Color,
 			DelayMinutes:  delayMin,
 			Stops:         static.RemainingStopNames(c.dep.TripID, stopIDs),
+			RouteType:     route.Type,
 		}
 		if len(destStopIDs) > 0 {
 			arrDur, ok := static.ArrivalTimeAtStop(c.dep.TripID, destStopIDs, stopIDs...)

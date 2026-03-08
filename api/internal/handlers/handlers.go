@@ -79,6 +79,7 @@ type departureResponse struct {
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
 	Alert         string   `json:"alert,omitempty"`
+	RouteType     int      `json:"routeType"`
 }
 
 type unionDepartureResponse struct {
@@ -208,6 +209,7 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 			IsInMotion:    d.IsInMotion,
 			IsCancelled:   d.IsCancelled,
 			Alert:         alertTexts[strings.ToUpper(d.LineName)],
+			RouteType:     d.RouteType,
 		}
 	}
 	respondJSON(w, slim)
@@ -237,31 +239,37 @@ func bestNSMatch(scheduledHHMM string, candidates []models.NextServiceLine) *mod
 	return nil
 }
 
+// All GO Transit train lines with their codes and display names.
+var allLines = []struct {
+	code string
+	name string
+}{
+	{"BR", "Barrie"},
+	{"GT", "Georgetown"},
+	{"KI", "Kitchener"},
+	{"LE", "Lakeshore East"},
+	{"LW", "Lakeshore West"},
+	{"MI", "Milton"},
+	{"ST", "Stouffville"},
+}
+
 // NetworkHealth returns the count of active trains per GO Transit line.
+// Always returns all lines, showing 0 for lines with no active trains.
 func (h *Handlers) NetworkHealth(w http.ResponseWriter, r *http.Request) {
 	entries := h.rt.GetAllServiceGlance()
-	type lineAgg struct {
-		name  string
-		count int
-	}
-	byLine := make(map[string]*lineAgg)
+	counts := make(map[string]int, len(allLines))
 	for _, e := range entries {
-		if e.LineCode == "" {
-			continue
-		}
-		if agg, ok := byLine[e.LineCode]; ok {
-			agg.count++
-		} else {
-			byLine[e.LineCode] = &lineAgg{name: e.LineName, count: 1}
+		if e.LineCode != "" {
+			counts[e.LineCode]++
 		}
 	}
-	result := make([]models.NetworkLine, 0, len(byLine))
-	for code, agg := range byLine {
-		result = append(result, models.NetworkLine{
-			LineCode:    code,
-			LineName:    agg.name,
-			ActiveTrips: agg.count,
-		})
+	result := make([]models.NetworkLine, len(allLines))
+	for i, l := range allLines {
+		result[i] = models.NetworkLine{
+			LineCode:    l.code,
+			LineName:    l.name,
+			ActiveTrips: counts[l.code],
+		}
 	}
 	respondJSON(w, result)
 }

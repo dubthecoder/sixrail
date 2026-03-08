@@ -33,6 +33,7 @@ type Departure struct {
 	Cars          string   `json:"cars,omitempty"`           // number of coaches
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
+	RouteType     int      `json:"routeType"`
 }
 
 // NextServiceLine is a single real-time next-service entry from Metrolinx NextService API.

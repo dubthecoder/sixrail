@@ -20,6 +20,7 @@ export type Departure = {
 	isInMotion?: boolean;
 	isCancelled?: boolean;
 	alert?: string;
+	routeType?: number;
 };
 
 export async function fetchDepartures(stopCode: string, destCode?: string): Promise<Departure[]> {
