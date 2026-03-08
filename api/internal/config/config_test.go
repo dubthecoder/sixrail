@@ -4,7 +4,7 @@ package config_test
 import (
 	"testing"
 
-	"github.com/teclara/sixrail/api/internal/config"
+	"github.com/dubthecoder/railsix/api/internal/config"
 )
 
 func TestLoad_Defaults(t *testing.T) {

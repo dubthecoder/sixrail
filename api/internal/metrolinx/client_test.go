@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/teclara/sixrail/api/internal/metrolinx"
+	"github.com/dubthecoder/railsix/api/internal/metrolinx"
 )
 
 func TestClient_Fetch(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/teclara/sixrail/api
+module github.com/dubthecoder/railsix/api
 
 go 1.22.5
 

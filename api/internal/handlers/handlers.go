@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	gtfsstore "github.com/teclara/sixrail/api/internal/gtfs"
-	"github.com/teclara/sixrail/api/internal/metrolinx"
-	"github.com/teclara/sixrail/api/internal/models"
+	gtfsstore "github.com/dubthecoder/railsix/api/internal/gtfs"
+	"github.com/dubthecoder/railsix/api/internal/metrolinx"
+	"github.com/dubthecoder/railsix/api/internal/models"
 )
 
 var stopCodeRe = regexp.MustCompile(`^[A-Za-z0-9]{2,10}$`)

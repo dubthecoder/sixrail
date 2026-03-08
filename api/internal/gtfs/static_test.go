@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	gtfsstore "github.com/teclara/sixrail/api/internal/gtfs"
+	gtfsstore "github.com/dubthecoder/railsix/api/internal/gtfs"
 )
 
 // buildTestZip creates a minimal GTFS zip with stops.txt, routes.txt,

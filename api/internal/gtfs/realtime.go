@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/teclara/sixrail/api/internal/models"
+	"github.com/dubthecoder/railsix/api/internal/models"
 )
 
 // Fetcher retrieves raw bytes from a remote path.
