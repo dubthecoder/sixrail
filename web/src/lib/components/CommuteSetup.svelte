@@ -5,6 +5,8 @@
 
 	let { stops }: { stops: Stop[] } = $props();
 
+	const trainStops = $derived(stops.filter((s) => /\bGO$/.test(s.name)));
+
 	let step = $state<1 | 2>(1);
 	let workOrigin = $state<Stop | null>(null);
 	let workDest = $state<Stop | null>(null);
@@ -75,7 +77,7 @@
 				<div>
 					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">From</p>
 					<StationSearchInput
-						{stops}
+						stops={trainStops}
 						bind:value={workOriginQuery}
 						placeholder="Origin station"
 						onSelect={(s) => {
@@ -86,7 +88,7 @@
 				<div>
 					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">To</p>
 					<StationSearchInput
-						{stops}
+						stops={trainStops}
 						bind:value={workDestQuery}
 						placeholder="Destination station"
 						onSelect={(s) => {
@@ -110,7 +112,7 @@
 				<div>
 					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">From</p>
 					<StationSearchInput
-						{stops}
+						stops={trainStops}
 						bind:value={homeOriginQuery}
 						placeholder="Origin station"
 						onSelect={(s) => {
@@ -121,7 +123,7 @@
 				<div>
 					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">To</p>
 					<StationSearchInput
-						{stops}
+						stops={trainStops}
 						bind:value={homeDestQuery}
 						placeholder="Destination station"
 						onSelect={(s) => {

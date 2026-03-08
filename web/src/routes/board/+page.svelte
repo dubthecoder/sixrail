@@ -43,10 +43,12 @@
 	let dropdownOpen = $state(false);
 	let searchQuery = $state('');
 
+	const trainStops = $derived(data.stops.filter((s) => /\bGO$/.test(s.name)));
+
 	let filteredStops = $derived(
 		searchQuery.length > 0
-			? data.stops.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
-			: data.stops
+			? trainStops.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+			: trainStops
 	);
 
 	let selectedStopName = $derived(
@@ -289,12 +291,17 @@
 		</div>
 		{#if networkHealth.length > 0}
 			<div class="network-health">
-				{#each networkHealth.toSorted((a, b) => a.lineCode.localeCompare(b.lineCode)) as line}
-					<div class="health-pill" title="{line.lineName}: {line.activeTrips} active trains">
-						<span class="text-gray-400">{line.lineCode}</span>
-						<span class="text-green-400 font-bold">{line.activeTrips}</span>
-					</div>
-				{/each}
+				<span class="text-gray-500 uppercase tracking-wider" style="font-size: 0.55em;"
+					>Active Trains</span
+				>
+				<div class="network-health-pills">
+					{#each networkHealth.toSorted((a, b) => a.lineCode.localeCompare(b.lineCode)) as line}
+						<div class="health-pill" title="{line.lineName}: {line.activeTrips} active trains">
+							<span class="text-gray-400">{line.lineCode}</span>
+							<span class="text-green-400 font-bold">{line.activeTrips}</span>
+						</div>
+					{/each}
+				</div>
 			</div>
 		{/if}
 		<div class="flex items-center gap-0.5em">
@@ -560,6 +567,14 @@
 	}
 
 	.network-health {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3em;
+		align-items: center;
+		flex-direction: column;
+	}
+
+	.network-health-pills {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.3em;
