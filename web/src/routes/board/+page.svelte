@@ -381,7 +381,7 @@
 		</div>
 
 		<div class="rows">
-			{#each departures as dep, i}
+			{#each departures as dep}
 				{@const occ = occupancyLabel(dep.occupancy)}
 				{@const metaParts = buildMetaParts(dep, occ)}
 				<div class="departure-row" class:cancelled={dep.isCancelled}>
@@ -451,7 +451,7 @@
 		</div>
 
 		<div class="rows">
-			{#each trainDepartures as dep, i}
+			{#each trainDepartures as dep}
 				{@const occ = occupancyLabel(dep.occupancy)}
 				{@const metaParts = buildMetaParts(dep, occ)}
 				<div class="departure-row" class:cancelled={dep.isCancelled}>
