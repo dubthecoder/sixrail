@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"strings"
 	"time"
@@ -91,15 +92,32 @@ func main() {
 	}
 }
 
-func downloadURL(url string) ([]byte, error) {
+var allowedGTFSHosts = map[string]bool{
+	"assets.metrolinx.com":    true,
+	"www.metrolinx.com":       true,
+	"metrolinx.com":           true,
+	"api.openmetrolinx.com":   true,
+	"opendata.metrolinx.com":  true,
+	"gtfs.metrolinx.com":      true,
+}
+
+func downloadURL(rawURL string) ([]byte, error) {
+	parsed, err := neturl.Parse(rawURL)
+	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+		return nil, fmt.Errorf("invalid or non-HTTP(S) URL: %s", rawURL)
+	}
+	if !allowedGTFSHosts[parsed.Hostname()] {
+		return nil, fmt.Errorf("host %q not in GTFS allowlist", parsed.Hostname())
+	}
 	client := &http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Get(url)
+	cleanURL := parsed.String()
+	resp, err := client.Get(cleanURL) //nolint:G107 // URL validated: scheme + hostname allowlist checked above
 	if err != nil {
-		return nil, fmt.Errorf("downloading %s: %w", url, err)
+		return nil, fmt.Errorf("downloading %s: %w", rawURL, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status %d for %s", resp.StatusCode, url)
+		return nil, fmt.Errorf("unexpected status %d for %s", resp.StatusCode, rawURL)
 	}
 	const maxBytes = 50 * 1024 * 1024 // 50 MB
 	return io.ReadAll(io.LimitReader(resp.Body, maxBytes))

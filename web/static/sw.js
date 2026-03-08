@@ -20,8 +20,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
 	const url = new URL(event.request.url);
 
+	// Only handle same-origin requests to prevent open proxy behavior
+	if (url.origin !== self.location.origin) return;
+
 	if (url.pathname.startsWith('/api/')) {
 		event.respondWith(
+			// aikido-ignore: same-origin validated on line 24
 			fetch(event.request).catch(
 				() =>
 					caches.match(event.request) ||
@@ -34,6 +38,7 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
+	// aikido-ignore: same-origin validated on line 24
 	event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
 });
 
