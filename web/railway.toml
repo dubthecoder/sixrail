@@ -1,6 +1,7 @@
 [build]
 builder = "RAILPACK"
 watchPatterns = ["web/**"]
+checkSuites = "required"
 
 [deploy]
 startCommand = "node build/index.js"

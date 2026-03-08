@@ -28,7 +28,8 @@
 	}
 
 	let polledDepartures = $state<UnionDeparture[] | null>(null);
-	let departures = $derived(sortByTime(polledDepartures ?? data.departures).slice(0, 15));
+	let maxRows = $derived(isFullscreen ? 10 : 15);
+	let departures = $derived(sortByTime(polledDepartures ?? data.departures).slice(0, maxRows));
 	let clock = $state('');
 	let clockInterval: ReturnType<typeof setInterval>;
 	let pollInterval: ReturnType<typeof setInterval>;
@@ -76,8 +77,8 @@
 	// All GTFS departures for the active stop (used for bus filtering + station view)
 	let allGtfsDepartures = $state<Departure[]>([]);
 
-	let trainDepartures = $derived(allGtfsDepartures.filter((d) => d.routeType !== 3).slice(0, 15));
-	let busDepartures = $derived(allGtfsDepartures.filter((d) => d.routeType === 3).slice(0, 15));
+	let trainDepartures = $derived(allGtfsDepartures.filter((d) => d.routeType !== 3).slice(0, maxRows));
+	let busDepartures = $derived(allGtfsDepartures.filter((d) => d.routeType === 3).slice(0, maxRows));
 
 	let loadController: AbortController | null = null;
 

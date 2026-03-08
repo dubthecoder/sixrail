@@ -1,0 +1,27 @@
+name: API
+
+on:
+  push:
+    branches: [main]
+    paths: [api/**]
+  pull_request:
+    paths: [api/**]
+
+defaults:
+  run:
+    working-directory: api
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: api/go.sum
+
+      - run: go vet ./...
+
+      - run: go test ./... -v -race

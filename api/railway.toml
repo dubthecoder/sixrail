@@ -1,6 +1,7 @@
 [build]
 builder = "RAILPACK"
 watchPatterns = ["api/**"]
+checkSuites = "required"
 
 [deploy]
 startCommand = "./out"

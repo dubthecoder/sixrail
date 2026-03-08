@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/subtle"
 	"fmt"
 	"io"
 	"log/slog"
@@ -76,10 +75,6 @@ func main() {
 	mux.HandleFunc("GET /api/fares/{from}/{to}", h.Fares)
 
 	var handler http.Handler = mux
-	if cfg.APIKey != "" {
-		slog.Info("API key authentication enabled")
-		handler = apiKeyMiddleware(cfg.APIKey, handler)
-	}
 	handler = corsMiddleware(cfg.AllowedOrigins, handler)
 
 	srv := &http.Server{
@@ -126,28 +121,6 @@ func refreshLoop(url string, static *gtfsstore.StaticStore, interval time.Durati
 	}
 }
 
-func apiKeyMiddleware(key string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Health check is always open for Railway/load balancer probes.
-		if r.URL.Path == "/api/health" {
-			next.ServeHTTP(w, r)
-			return
-		}
-		// Accept key from header or query param.
-		provided := r.Header.Get("X-API-Key")
-		if provided == "" {
-			provided = r.URL.Query().Get("key")
-		}
-		if provided == "" || subtle.ConstantTimeCompare([]byte(provided), []byte(key)) != 1 {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":"unauthorized"}`))
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
 func corsMiddleware(allowedOrigins string, next http.Handler) http.Handler {
 	origins := strings.Split(allowedOrigins, ",")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -158,8 +131,9 @@ func corsMiddleware(allowedOrigins string, next http.Handler) http.Handler {
 				break
 			}
 		}
+		w.Header().Set("Vary", "Origin")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

@@ -38,10 +38,10 @@ npm run build                     # production build
 
 ## Go API Structure
 
-Entry point: `api/cmd/server/main.go` — sets up GTFS stores, pollers, routes, middleware (CORS + optional API key auth).
+Entry point: `api/cmd/server/main.go` — sets up GTFS stores, pollers, routes, middleware (CORS).
 
 Internal packages under `api/internal/`:
-- `config/` — env var loading (`METROLINX_API_KEY`, `GTFS_STATIC_URL`, `PORT`, `ALLOWED_ORIGINS`, `API_KEY`)
+- `config/` — env var loading (`METROLINX_API_KEY`, `GTFS_STATIC_URL`, `PORT`, `ALLOWED_ORIGINS`)
 - `models/` — shared data structs (`Stop`, `Route`, `VehiclePosition`, `Alert`, `Departure`, `ServiceGlanceEntry`, `FareInfo`, `NetworkLine`)
 - `metrolinx/` — HTTP client for Metrolinx API (10s timeout, 10MB body limit)
 - `metrolinx/responses.go` — Metrolinx-specific response parsers (NextService, ServiceGlance, UnionDepartures, Fares)
@@ -51,7 +51,7 @@ Internal packages under `api/internal/`:
 - `handlers/` — HTTP handlers with dependency injection. Stop code validated via `^[A-Za-z0-9]{2,10}$`
 
 ### API Routes
-- `GET /api/health` — health check (bypasses API key auth)
+- `GET /api/health` — health check
 - `GET /api/stops` — all GO Transit stops
 - `GET /api/departures/{stopCode}` — departures for a station (optional `?dest=` filter)
 - `GET /api/union-departures` — Union Station departures (polled from Metrolinx every 30s)
@@ -69,8 +69,7 @@ Started in `main.go` when `METROLINX_API_KEY` is configured:
 - **OccupancyPoller** (30s) — GTFS-RT VehiclePosition feed for occupancy status strings
 
 ### Middleware
-- **CORS** — allows configured origins, GET + OPTIONS methods, `X-API-Key` header
-- **API Key Auth** (optional, when `API_KEY` env var set) — checks `X-API-Key` header or `?key=` query param. Health endpoint is exempt.
+- **CORS** — allows configured origins, GET + OPTIONS methods
 
 ## Web Structure
 
@@ -114,7 +113,6 @@ Key components:
 | `METROLINX_API_KEY` | — | Metrolinx OpenData API key (required for real-time) |
 | `GTFS_STATIC_URL` | Metrolinx default | URL to GTFS static ZIP |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS allowed origins (comma-separated) |
-| `API_KEY` | — | Optional API key for endpoint auth |
 
 ### Web
 | Variable | Description |

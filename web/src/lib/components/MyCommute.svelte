@@ -206,6 +206,20 @@
 			</div>
 		{/if}
 
+		<footer class="mt-auto pt-6 pb-4 text-center">
+			<p class="text-gray-700 text-[9px] font-mono leading-relaxed">
+				Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
+			</p>
+			<p class="text-gray-600 text-[10px] tracking-wide font-mono mt-2">
+				&copy; {new Date().getFullYear()}
+				<a
+					href="https://teclara.tech"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="hover:text-gray-400 transition-colors">Teclara Technologies Inc</a
+				>
+			</p>
+		</footer>
 	</div>
 
 	{#if showSettings}
