@@ -41,6 +41,7 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 
 	type candidate struct {
 		dep        ScheduledDeparture
+		stopID     string    // which platform/stop this departure is from
 		serviceDay time.Time // the service day this departure belongs to
 		adjusted   time.Time // wall-clock departure time after real-time delay
 	}
@@ -71,7 +72,7 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 					continue
 				}
 
-				candidates = append(candidates, candidate{dep, serviceDay, adjusted})
+				candidates = append(candidates, candidate{dep, stopID, serviceDay, adjusted})
 				break // matched a service day — no need to check the other
 			}
 		}
@@ -82,17 +83,28 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 		return candidates[i].adjusted.Before(candidates[j].adjusted)
 	})
 
-	// Deduplicate by trip number — same physical train can have multiple GTFS
-	// trip IDs due to different service date prefixes (e.g. 20260301-LW-1731
-	// vs 20260424-LW-1731 are the same train 1731).
-	seen := make(map[string]bool)
+	// Deduplicate by trip number AND by departure time + line.
+	// Same physical train can have multiple GTFS trip IDs due to:
+	// 1. Different service date prefixes (e.g. 20260301-LW-1731 vs 20260424-LW-1731)
+	// 2. Overlapping service calendars producing different trip numbers for the same departure
+	seenTrip := make(map[string]bool)
+	seenTimeLine := make(map[string]bool)
 	result := make([]models.Departure, 0, maxDepartures)
 	for _, c := range candidates {
 		tripNum := extractTripNumber(c.dep.TripID)
-		if seen[tripNum] {
+		if seenTrip[tripNum] {
 			continue
 		}
-		seen[tripNum] = true
+		seenTrip[tripNum] = true
+
+		// Also dedup by scheduled time + route + stop: if two different trip numbers
+		// produce the same departure time on the same route at the same platform,
+		// keep only the first. Different platforms are preserved as distinct departures.
+		timeLineKey := formatTime(c.serviceDay.Add(c.dep.DepartureTime)) + "|" + c.dep.RouteID + "|" + c.stopID
+		if seenTimeLine[timeLineKey] {
+			continue
+		}
+		seenTimeLine[timeLineKey] = true
 
 		route, _ := static.GetRoute(c.dep.RouteID)
 		delay := c.adjusted.Sub(c.serviceDay.Add(c.dep.DepartureTime))
