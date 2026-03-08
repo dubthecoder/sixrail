@@ -342,7 +342,7 @@
 			<span class="col-time text-amber-400">TIME</span>
 			<span class="col-service text-white">SERVICE</span>
 			<span class="col-cars text-gray-400">CRS</span>
-			<span class="col-plat text-white">PLATFRM</span>
+			<span class="col-plat text-white">PLT</span>
 			<span class="col-info text-gray-400">STATUS</span>
 		</div>
 
@@ -372,7 +372,7 @@
 						</span>
 
 						<span class="col-plat text-white">
-							{#each padCenter(dep.platform || '--', 7).split('') as char, j}
+							{#each padCenter(dep.platform || '--', 5).split('') as char, j}
 								<SplitFlapChar value={char} delay={50 + j * 12} />
 							{/each}
 						</span>
@@ -412,7 +412,7 @@
 			<span class="col-time text-amber-400">TIME</span>
 			<span class="col-line text-white">LINE</span>
 			<span class="col-cars text-gray-400">CRS</span>
-			<span class="col-plat text-white">PLATFRM</span>
+			<span class="col-plat text-white">PLT</span>
 			<span class="col-status text-gray-400">STATUS</span>
 		</div>
 
@@ -442,7 +442,7 @@
 						</span>
 
 						<span class="col-plat text-white">
-							{#each padCenter(dep.platform || '--', 7).split('') as char, j}
+							{#each padCenter(dep.platform || '--', 5).split('') as char, j}
 								<SplitFlapChar value={char} delay={50 + j * 12} />
 							{/each}
 						</span>
@@ -565,14 +565,14 @@
 
 	.flap-row {
 		display: grid;
-		grid-template-columns: 5ch 1fr 3ch 7ch 7ch;
+		grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
 		gap: 0.4em;
 		align-items: center;
 	}
 
 	.flap-row-station {
 		display: grid;
-		grid-template-columns: 5ch 1fr 3ch 7ch 7ch;
+		grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
 		gap: 0.4em;
 		align-items: center;
 	}

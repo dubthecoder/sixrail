@@ -36,7 +36,7 @@
 		<span class="col-time text-amber-400">TIME</span>
 		<span class="col-route text-white">LINE</span>
 		<span class="col-cars text-gray-400">CRS</span>
-		<span class="col-platform text-white">PLATFRM</span>
+		<span class="col-platform text-white">PLT</span>
 		<span class="col-arrival text-amber-300">ARRV</span>
 		<span class="col-occ text-gray-400"></span>
 		<span class="col-status text-gray-400">STATUS</span>
@@ -68,7 +68,7 @@
 			</span>
 
 			<span class="col-platform text-white">
-				{#each padCenter(dep.platform ?? '--', 7).split('') as char, j}
+				{#each padCenter(dep.platform ?? '--', 5).split('') as char, j}
 					<SplitFlapChar value={char} delay={50 + j * 12} />
 				{/each}
 			</span>
@@ -109,7 +109,7 @@
 
 	.board-row {
 		display: grid;
-		grid-template-columns: 5ch 10ch 3ch 7ch 5ch 2ch 11ch;
+		grid-template-columns: 5ch 10ch 3ch 5ch 5ch 2ch 11ch;
 		gap: 6px;
 		align-items: center;
 		padding: 4px 0;
@@ -176,7 +176,7 @@
 
 	@media (max-width: 480px) {
 		.board-row {
-			grid-template-columns: 5ch 8ch 3ch 7ch 5ch 2ch 9ch;
+			grid-template-columns: 5ch 8ch 3ch 5ch 5ch 2ch 9ch;
 			gap: 3px;
 		}
 	}
