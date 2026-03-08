@@ -9,8 +9,13 @@ function getBaseUrl() {
 	return url;
 }
 
+function authHeaders(): Record<string, string> {
+	const key = env.API_KEY;
+	return key ? { 'X-API-Key': key } : {};
+}
+
 async function fetchApi<T>(path: string): Promise<T> {
-	const res = await fetch(`${getBaseUrl()}${path}`);
+	const res = await fetch(`${getBaseUrl()}${path}`, { headers: authHeaders() });
 	if (!res.ok) {
 		throw new Error(`API error: ${res.status} ${res.statusText}`);
 	}

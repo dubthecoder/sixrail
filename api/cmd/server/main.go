@@ -72,7 +72,12 @@ func main() {
 	mux.HandleFunc("GET /api/network-health", h.NetworkHealth)
 	mux.HandleFunc("GET /api/fares/{from}/{to}", h.Fares)
 
-	handler := corsMiddleware(cfg.AllowedOrigins, mux)
+	var handler http.Handler = mux
+	if cfg.APIKey != "" {
+		slog.Info("API key authentication enabled")
+		handler = apiKeyMiddleware(cfg.APIKey, handler)
+	}
+	handler = corsMiddleware(cfg.AllowedOrigins, handler)
 
 	slog.Info("starting sixrail-api", "port", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, handler); err != nil {
@@ -111,6 +116,28 @@ func refreshLoop(url string, static *gtfsstore.StaticStore, interval time.Durati
 	}
 }
 
+func apiKeyMiddleware(key string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Health check is always open for Railway/load balancer probes.
+		if r.URL.Path == "/api/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Accept key from header or query param.
+		provided := r.Header.Get("X-API-Key")
+		if provided == "" {
+			provided = r.URL.Query().Get("key")
+		}
+		if provided != key {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":"unauthorized"}`))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func corsMiddleware(allowedOrigins string, next http.Handler) http.Handler {
 	origins := strings.Split(allowedOrigins, ",")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +149,7 @@ func corsMiddleware(allowedOrigins string, next http.Handler) http.Handler {
 			}
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

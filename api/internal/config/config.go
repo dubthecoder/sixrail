@@ -9,6 +9,7 @@ type Config struct {
 	MetrolinxBaseURL string
 	AllowedOrigins   string
 	GTFSStaticURL    string
+	APIKey           string // optional: if set, all endpoints (except /api/health) require this key
 }
 
 func Load() Config {
@@ -18,6 +19,7 @@ func Load() Config {
 		MetrolinxBaseURL: envOr("METROLINX_BASE_URL", "https://api.openmetrolinx.com/OpenDataAPI/api/V1"),
 		AllowedOrigins:   envOr("ALLOWED_ORIGINS", "http://localhost:5173"),
 		GTFSStaticURL:    envOr("GTFS_STATIC_URL", "https://assets.metrolinx.com/raw/upload/Documents/Metrolinx/Open%20Data/GO-GTFS.zip"),
+		APIKey:           os.Getenv("API_KEY"),
 	}
 }
 
