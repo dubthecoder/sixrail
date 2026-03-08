@@ -291,8 +291,10 @@ func (s *StaticStore) DeparturesForStop(stopID string) []ScheduledDeparture {
 }
 
 // ArrivalTimeAtStop returns the scheduled arrival duration-from-midnight for a trip
-// at the first matching stop from destStopIDs. Returns 0, false if not found.
-func (s *StaticStore) ArrivalTimeAtStop(tripID string, destStopIDs []string) (time.Duration, bool) {
+// at the first matching stop from destStopIDs that appears AFTER any originStopIDs
+// in the stop sequence. This ensures we only match trips traveling from origin → destination.
+// Returns 0, false if the destination is not found after the origin.
+func (s *StaticStore) ArrivalTimeAtStop(tripID string, destStopIDs []string, originStopIDs ...string) (time.Duration, bool) {
 	s.mu.RLock()
 	trip, ok := s.tripIndex[tripID]
 	s.mu.RUnlock()
@@ -303,9 +305,29 @@ func (s *StaticStore) ArrivalTimeAtStop(tripID string, destStopIDs []string) (ti
 	for _, id := range destStopIDs {
 		destSet[id] = true
 	}
-	for _, ts := range trip.Stops {
-		if destSet[ts.StopID] {
-			return ts.ArrivalTime, true
+	// If origin stop IDs are provided, find the origin index first and only
+	// match destinations that come after it in the stop sequence.
+	startIdx := 0
+	if len(originStopIDs) > 0 {
+		originSet := make(map[string]bool, len(originStopIDs))
+		for _, id := range originStopIDs {
+			originSet[id] = true
+		}
+		found := false
+		for i, ts := range trip.Stops {
+			if originSet[ts.StopID] {
+				startIdx = i + 1
+				found = true
+				break
+			}
+		}
+		if !found {
+			return 0, false
+		}
+	}
+	for i := startIdx; i < len(trip.Stops); i++ {
+		if destSet[trip.Stops[i].StopID] {
+			return trip.Stops[i].ArrivalTime, true
 		}
 	}
 	return 0, false

@@ -191,7 +191,7 @@
 				{/each}
 			</span>
 			<span class="col-plat text-white">
-				{#each padRight('PLAT', 4).split('') as char}
+				{#each padRight('PLAT', 7).split('') as char}
 					<SplitFlapChar value={char} delay={0} />
 				{/each}
 			</span>
@@ -219,7 +219,7 @@
 						</span>
 
 						<span class="col-plat text-white">
-							{#each padRight(dep.platform || '--', 4).split('') as char, j}
+							{#each padRight(dep.platform || '--', 7).split('') as char, j}
 								<SplitFlapChar value={char} delay={50 + j * 12} />
 							{/each}
 						</span>
@@ -263,7 +263,7 @@
 				{/each}
 			</span>
 			<span class="col-plat text-white">
-				{#each padRight('PLAT', 5).split('') as char}
+				{#each padRight('PLAT', 7).split('') as char}
 					<SplitFlapChar value={char} delay={0} />
 				{/each}
 			</span>
@@ -291,7 +291,7 @@
 						</span>
 
 						<span class="col-plat text-white">
-							{#each padRight(dep.platform || '--', 5).split('') as char, j}
+							{#each padRight(dep.platform || '--', 7).split('') as char, j}
 								<SplitFlapChar value={char} delay={50 + j * 12} />
 							{/each}
 						</span>
@@ -325,14 +325,14 @@
 <style>
 	.flap-row {
 		display: grid;
-		grid-template-columns: 5ch 16ch 5ch 7ch;
+		grid-template-columns: 5ch 16ch 7ch 7ch;
 		gap: 8px;
 		align-items: center;
 	}
 
 	.flap-row-station {
 		display: grid;
-		grid-template-columns: 5ch 14ch 4ch 7ch;
+		grid-template-columns: 5ch 14ch 7ch 7ch;
 		gap: 8px;
 		align-items: center;
 	}
@@ -458,12 +458,12 @@
 
 	@media (max-width: 480px) {
 		.flap-row {
-			grid-template-columns: 5ch 13ch 4ch 7ch;
+			grid-template-columns: 5ch 13ch 7ch 7ch;
 			gap: 4px;
 		}
 
 		.flap-row-station {
-			grid-template-columns: 5ch 11ch 3ch 7ch;
+			grid-template-columns: 5ch 11ch 7ch 7ch;
 			gap: 4px;
 		}
 	}

@@ -28,17 +28,26 @@
 		if (gen !== flipGeneration) return; // cancelled
 
 		let current = displayValue.toUpperCase();
-		while (current !== targetUpper) {
-			if (gen !== flipGeneration) return; // cancelled
+		let steps = 0;
+		while (current !== targetUpper && steps < CHARS.length) {
+			if (gen !== flipGeneration) { isFlipping = false; return; }
 			current = getNextChar(current);
+			steps++;
 			topValue = current;
 			isFlipping = true;
 			await new Promise((r) => setTimeout(r, 25));
-			if (gen !== flipGeneration) return;
+			if (gen !== flipGeneration) { isFlipping = false; return; }
 			isFlipping = false;
 			bottomValue = current;
 			displayValue = current;
 			await new Promise((r) => setTimeout(r, 5));
+		}
+
+		// Target char not in CHARS — snap directly
+		if (current !== targetUpper) {
+			topValue = targetUpper;
+			bottomValue = targetUpper;
+			displayValue = targetUpper;
 		}
 	}
 

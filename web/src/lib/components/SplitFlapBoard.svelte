@@ -66,7 +66,7 @@
 			{/each}
 		</span>
 		<span class="col-platform text-white">
-			{#each padRight('PLAT', 4).split('') as char}
+			{#each padRight('PLAT', 7).split('') as char}
 				<SplitFlapChar value={char} delay={0} />
 			{/each}
 		</span>
@@ -109,7 +109,7 @@
 			</span>
 
 			<span class="col-platform text-white">
-				{#each padRight(dep.platform ?? '--', 4).split('') as char, j}
+				{#each padRight(dep.platform ?? '--', 7).split('') as char, j}
 					<SplitFlapChar value={char} delay={100 + j * 20} />
 				{/each}
 			</span>
@@ -153,7 +153,7 @@
 
 	.board-row {
 		display: grid;
-		grid-template-columns: 5ch 10ch 3ch 4ch 5ch 2ch 11ch;
+		grid-template-columns: 5ch 10ch 3ch 7ch 5ch 2ch 11ch;
 		gap: 6px;
 		align-items: center;
 		padding: 4px 0;
@@ -219,7 +219,7 @@
 
 	@media (max-width: 480px) {
 		.board-row {
-			grid-template-columns: 5ch 8ch 3ch 3ch 5ch 2ch 9ch;
+			grid-template-columns: 5ch 8ch 3ch 7ch 5ch 2ch 9ch;
 			gap: 3px;
 		}
 	}

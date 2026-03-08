@@ -130,9 +130,9 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 			Stops:         static.RemainingStopNames(c.dep.TripID, stopIDs),
 		}
 		if len(destStopIDs) > 0 {
-			arrDur, ok := static.ArrivalTimeAtStop(c.dep.TripID, destStopIDs)
+			arrDur, ok := static.ArrivalTimeAtStop(c.dep.TripID, destStopIDs, stopIDs...)
 			if !ok {
-				continue // skip trips that don't stop at the destination
+				continue // skip trips that don't stop at the destination (or destination is before origin)
 			}
 			dep.ArrivalTime = formatTime(c.serviceDay.Add(arrDur))
 		}
