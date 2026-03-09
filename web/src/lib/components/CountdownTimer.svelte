@@ -46,7 +46,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 4px;
-		background: #1a1a1a;
+		background: var(--color-surface-overlay);
 		border-radius: 8px;
 		padding: 12px 24px;
 		min-width: 160px;

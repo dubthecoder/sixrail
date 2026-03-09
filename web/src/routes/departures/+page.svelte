@@ -267,7 +267,7 @@
 	<meta name="twitter:image" content="https://railsix.com/train.png" />
 </svelte:head>
 
-<div class="board font-mono select-none bg-[#0a0a0a] text-white" bind:this={boardEl}>
+<div class="board font-mono select-none bg-surface-inset text-white" bind:this={boardEl}>
 	<!-- Header -->
 	<div class="board-header">
 		<div>
@@ -526,7 +526,7 @@
 	.fullscreen-btn {
 		background: none;
 		border: none;
-		color: #555;
+		color: var(--color-muted);
 		font-size: 1em;
 		cursor: pointer;
 		padding: 0.1em;
@@ -536,7 +536,7 @@
 	}
 
 	.fullscreen-btn:hover {
-		color: #fbbf24;
+		color: var(--color-accent);
 	}
 
 	/* ── Viewport-scaling board ── */
@@ -552,7 +552,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0.4em 0.8em;
-		border-bottom: 1px solid #1a1a1a;
+		border-bottom: 1px solid var(--color-border-subtle);
 		flex-shrink: 0;
 		flex-wrap: wrap;
 		gap: 0.3em;
@@ -578,14 +578,14 @@
 		align-items: center;
 		gap: 0.2em;
 		padding: 0.1em 0.4em;
-		background: #1a1a1a;
+		background: var(--color-surface-overlay);
 		border-radius: 3px;
 		font-size: 0.55em;
 	}
 
 	.col-headers {
 		padding: 0.3em 0.8em;
-		border-bottom: 1px solid #161616;
+		border-bottom: 1px solid var(--color-surface-raised);
 		flex-shrink: 0;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -663,7 +663,7 @@
 	}
 
 	.alert-inline {
-		color: #fbbf24;
+		color: var(--color-accent);
 		font-size: 0.5em;
 		margin-left: 0.3em;
 		white-space: nowrap;
@@ -708,8 +708,8 @@
 		right: 0;
 		top: 100%;
 		width: 260px;
-		background: #1a1a1a;
-		border: 1px solid #2a2a2a;
+		background: var(--color-surface-overlay);
+		border: 1px solid var(--color-border);
 		border-radius: 6px;
 		z-index: 50;
 		overflow: hidden;
@@ -720,9 +720,9 @@
 	.dropdown-search {
 		width: 100%;
 		padding: 8px 12px;
-		background: #111;
+		background: var(--color-surface);
 		border: none;
-		border-bottom: 1px solid #2a2a2a;
+		border-bottom: 1px solid var(--color-border);
 		color: white;
 		font-family: inherit;
 		font-size: 0.75rem;
@@ -731,7 +731,7 @@
 	}
 
 	.dropdown-search::placeholder {
-		color: #555;
+		color: var(--color-muted);
 		text-transform: uppercase;
 	}
 
@@ -747,7 +747,7 @@
 		padding: 8px 12px;
 		background: none;
 		border: none;
-		color: #ccc;
+		color: var(--color-dim);
 		font-family: inherit;
 		font-size: 0.7rem;
 		text-transform: uppercase;
@@ -757,8 +757,8 @@
 	}
 
 	.dropdown-item:hover {
-		background: #252525;
-		color: #fbbf24;
+		background: var(--color-surface-hover);
+		color: var(--color-accent);
 	}
 
 	.dropdown-list::-webkit-scrollbar {
@@ -766,11 +766,11 @@
 	}
 
 	.dropdown-list::-webkit-scrollbar-track {
-		background: #1a1a1a;
+		background: var(--color-surface-overlay);
 	}
 
 	.dropdown-list::-webkit-scrollbar-thumb {
-		background: #333;
+		background: var(--color-border-input);
 		border-radius: 2px;
 	}
 
@@ -790,7 +790,7 @@
 			width: 100%;
 			justify-content: center;
 			padding-top: 0.2em;
-			border-top: 1px solid #1a1a1a;
+			border-top: 1px solid var(--color-border-subtle);
 		}
 
 		.flap-row {

@@ -1,1 +1,33 @@
 @import 'tailwindcss';
+
+@theme {
+	/* Accent */
+	--color-accent: #fbbf24;
+
+	/* Surfaces (darkest → lightest) */
+	--color-surface-inset: #0a0a0a;
+	--color-surface: #111111;
+	--color-surface-raised: #161616;
+	--color-surface-overlay: #1a1a1a;
+	--color-surface-input: #1e1e1e;
+	--color-surface-hover: #252525;
+
+	/* Borders */
+	--color-border-subtle: #1a1a1a;
+	--color-border-header: #222222;
+	--color-border: #2a2a2a;
+	--color-border-input: #333333;
+
+	/* Text shades (for <style> blocks — in templates use Tailwind gray-*) */
+	--color-muted: #555555;
+	--color-dim: #cccccc;
+
+	/* Split-flap */
+	--color-flap-dark: #181818;
+
+	/* Alerts */
+	--color-alert-bg: #1a1200;
+	--color-alert-border: #5a3e00;
+	--color-alert-border-inner: #3a2800;
+	--color-alert-border-subtle: #2a1e00;
+}

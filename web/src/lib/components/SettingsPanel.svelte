@@ -158,8 +158,8 @@
 		z-index: 100;
 	}
 	.settings-panel {
-		background: #161616;
-		border-top: 1px solid #2a2a2a;
+		background: var(--color-surface-raised);
+		border-top: 1px solid var(--color-border);
 		border-radius: 12px 12px 0 0;
 		width: 100%;
 		max-width: 480px;
@@ -174,7 +174,7 @@
 		margin-bottom: 20px;
 	}
 	.section-title {
-		color: #6b7280;
+		color: var(--color-gray-500);
 		font-family: monospace;
 		font-size: 0.7rem;
 		text-transform: uppercase;

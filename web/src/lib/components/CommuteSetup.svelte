@@ -62,7 +62,7 @@
 	}
 </script>
 
-<div class="h-[calc(100dvh-60px)] bg-[#111] flex flex-col items-center justify-center p-6">
+<div class="h-[calc(100dvh-60px)] bg-surface flex flex-col items-center justify-center p-6">
 	<div class="w-full max-w-sm flex-shrink-0">
 		<h1
 			class="text-amber-400 text-xl font-bold font-mono tracking-widest uppercase text-center mb-2"
@@ -138,7 +138,7 @@
 				</div>
 				<div class="flex gap-3 mt-4">
 					<button
-						class="flex-1 bg-[#1e1e1e] text-white font-mono py-3 rounded border border-[#333]"
+						class="flex-1 bg-surface-input text-white font-mono py-3 rounded border border-border-input"
 						onclick={() => (step = 1)}
 					>
 						← BACK

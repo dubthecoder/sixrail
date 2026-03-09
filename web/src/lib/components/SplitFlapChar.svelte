@@ -88,7 +88,7 @@
 		display: inline-block;
 		width: 1ch;
 		height: 1.4em;
-		background: #1e1e1e;
+		background: var(--color-surface-input);
 		border-radius: 2px;
 		overflow: hidden;
 		box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
@@ -105,13 +105,13 @@
 
 	.tile.top {
 		top: 0;
-		background: #1e1e1e;
+		background: var(--color-surface-input);
 		border-bottom: 1px solid #000;
 	}
 
 	.tile.bottom {
 		bottom: 0;
-		background: #181818;
+		background: var(--color-flap-dark);
 	}
 
 	.tile.flipping {
@@ -119,7 +119,7 @@
 		height: 100%;
 		animation: flip 50ms linear forwards;
 		transform-origin: center;
-		background: #1e1e1e;
+		background: var(--color-surface-input);
 		z-index: 2;
 	}
 

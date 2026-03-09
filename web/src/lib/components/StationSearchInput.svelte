@@ -58,7 +58,7 @@
 <div class="station-search-input relative">
 	<input
 		type="text"
-		class="w-full bg-[#1e1e1e] text-white font-mono px-3 py-2 rounded border border-[#333] focus:border-amber-400 focus:outline-none"
+		class="w-full bg-surface-input text-white font-mono px-3 py-2 rounded border border-border-input focus:border-accent focus:outline-none"
 		style="font-size: 16px;"
 		{placeholder}
 		{value}
@@ -70,14 +70,14 @@
 	/>
 	{#if showDropdown}
 		<ul
-			class="dropdown absolute z-50 w-full mt-1 bg-[#1e1e1e] border border-[#333] rounded shadow-lg max-h-64 overflow-y-auto"
+			class="dropdown absolute z-50 w-full mt-1 bg-surface-input border border-border-input rounded shadow-lg max-h-64 overflow-y-auto"
 			role="listbox"
 			onpointerdown={() => (tappingDropdown = true)}
 		>
 			{#each results as stop}
 				<li role="option" aria-selected="false">
 					<button
-						class="w-full text-left px-3 py-2 font-mono text-white hover:bg-[#2a2a2a] focus:bg-[#2a2a2a]"
+						class="w-full text-left px-3 py-2 font-mono text-white hover:bg-border focus:bg-border"
 						style="font-size: 16px;"
 						onclick={() => select(stop)}
 					>

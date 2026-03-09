@@ -53,8 +53,8 @@
 
 <style>
 	.alert-banner {
-		background: #1a1200;
-		border: 1px solid #5a3e00;
+		background: var(--color-alert-bg);
+		border: 1px solid var(--color-alert-border);
 		border-radius: 6px;
 		overflow: hidden;
 		margin-bottom: 12px;
@@ -65,7 +65,7 @@
 		align-items: center;
 		gap: 8px;
 		padding: 8px 12px;
-		color: #f5a623;
+		color: var(--color-accent);
 	}
 
 	.icon {
@@ -76,13 +76,13 @@
 	}
 
 	.banner-details {
-		border-top: 1px solid #3a2800;
+		border-top: 1px solid var(--color-alert-border-inner);
 		padding: 8px 12px;
 	}
 
 	.alert-item + .alert-item {
 		margin-top: 8px;
 		padding-top: 8px;
-		border-top: 1px solid #2a1e00;
+		border-top: 1px solid var(--color-alert-border-subtle);
 	}
 </style>

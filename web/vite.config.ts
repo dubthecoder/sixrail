@@ -1,6 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, '.', '');
@@ -38,6 +39,10 @@ export default defineConfig(({ mode }) => {
 			strictPort: true,
 			allowedHosts: true,
 			hmr
+		},
+		test: {
+			environment: 'node',
+			include: ['src/**/*.test.ts']
 		}
 	};
 });

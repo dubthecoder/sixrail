@@ -87,7 +87,7 @@ self.addEventListener('fetch', (event) => {
 							(cached) =>
 								cached ||
 								new Response(
-									'<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Offline</title></head><body style="background:#111;color:#999;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><h1 style="color:#f5a623">Rail Six</h1><p>You are offline.</p><p>Please check your connection and try again.</p></div></body></html>',
+									'<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Offline</title></head><body style="background:#111;color:#999;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><h1 style="color:#fbbf24">Rail Six</h1><p>You are offline.</p><p>Please check your connection and try again.</p></div></body></html>',
 									{ status: 503, headers: { 'Content-Type': 'text/html' } }
 								)
 						)

@@ -169,7 +169,7 @@
 	:global(body) {
 		margin: 0;
 		padding-bottom: 60px;
-		background: #111;
+		background: var(--color-surface);
 	}
 
 	.bottom-nav {
@@ -178,8 +178,8 @@
 		left: 0;
 		right: 0;
 		height: 60px;
-		background: #161616;
-		border-top: 1px solid #2a2a2a;
+		background: var(--color-surface-raised);
+		border-top: 1px solid var(--color-border);
 		display: flex;
 		z-index: 50;
 	}
@@ -192,17 +192,17 @@
 		justify-content: center;
 		gap: 2px;
 		text-decoration: none;
-		color: #6b7280;
+		color: var(--color-gray-500);
 		transition: color 0.15s;
 		font-family: monospace;
 	}
 
 	.nav-item.active {
-		color: #f5a623;
+		color: var(--color-accent);
 	}
 
 	.nav-item:hover {
-		color: #d1d5db;
+		color: var(--color-gray-300);
 	}
 
 	.icon {
@@ -229,8 +229,8 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		background: #1a1a1a;
-		border: 1px solid #2a2a2a;
+		background: var(--color-surface-overlay);
+		border: 1px solid var(--color-border);
 		border-radius: 10px;
 		padding: 12px 16px;
 		max-width: 480px;
@@ -243,7 +243,7 @@
 	}
 
 	.install-title {
-		color: #f5a623;
+		color: var(--color-accent);
 		font-family: monospace;
 		font-size: 0.8rem;
 		font-weight: bold;
@@ -252,7 +252,7 @@
 	}
 
 	.install-desc {
-		color: #9ca3af;
+		color: var(--color-gray-400);
 		font-family: monospace;
 		font-size: 0.65rem;
 		margin-top: 2px;
@@ -270,7 +270,7 @@
 	}
 
 	.install-btn {
-		background: #f5a623;
+		background: var(--color-accent);
 		color: #000;
 		font-family: monospace;
 		font-size: 0.7rem;
@@ -283,7 +283,7 @@
 	}
 
 	.install-dismiss {
-		color: #6b7280;
+		color: var(--color-gray-500);
 		font-size: 1.2rem;
 		line-height: 1;
 		cursor: pointer;
@@ -291,7 +291,7 @@
 	}
 
 	.install-dismiss:hover {
-		color: #d1d5db;
+		color: var(--color-gray-300);
 	}
 
 	@keyframes slideUp {

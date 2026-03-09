@@ -95,7 +95,7 @@
 
 <style>
 	.split-flap-board {
-		background: #111;
+		background: var(--color-surface);
 		border-radius: 8px;
 		padding: 12px;
 		width: fit-content;
@@ -112,13 +112,13 @@
 	}
 
 	.board-header-row {
-		border-bottom: 1px solid #222;
+		border-bottom: 1px solid var(--color-border-header);
 		margin-bottom: 8px;
 		padding-bottom: 8px;
 	}
 
 	.board-row {
-		border-bottom: 1px solid #1a1a1a;
+		border-bottom: 1px solid var(--color-border-subtle);
 		padding: 6px 0;
 	}
 

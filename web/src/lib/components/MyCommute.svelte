@@ -51,10 +51,12 @@
 	let nextDeparture = $derived.by(() => {
 		tick; // re-evaluate each tick
 		const now = torontoNow();
-		return departures.find((d) => {
-			const [h, m] = d.scheduledTime.split(':').map(Number);
-			return now.todayAt(h, m) > now.ms;
-		}) ?? null;
+		return (
+			departures.find((d) => {
+				const [h, m] = d.scheduledTime.split(':').map(Number);
+				return now.todayAt(h, m) > now.ms;
+			}) ?? null
+		);
 	});
 
 	async function loadDepartures(trip = activeTrip) {
@@ -124,7 +126,7 @@
 	<CommuteSetup {stops} />
 {:else}
 	<div
-		class="my-commute bg-[#111] h-[calc(100dvh-60px)] text-white font-mono p-4 flex flex-col justify-center gap-4 max-w-xl mx-auto overflow-hidden"
+		class="my-commute bg-surface h-[calc(100dvh-60px)] text-white font-mono p-4 flex flex-col justify-center gap-4 max-w-xl mx-auto overflow-hidden"
 	>
 		<!-- Header -->
 		<div class="flex items-start justify-between pt-2">
@@ -142,7 +144,7 @@
 		</div>
 
 		<!-- Direction toggle -->
-		<div class="flex rounded overflow-hidden border border-[#2a2a2a]">
+		<div class="flex rounded overflow-hidden border border-border">
 			<button
 				class="flex-1 py-2 text-xs uppercase tracking-wider transition-colors"
 				class:bg-amber-400={activeDirection === 'toWork'}
