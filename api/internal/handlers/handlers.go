@@ -208,9 +208,6 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 				}
 				// Remove matched candidate so it can't be reused by another departure
 				byLine[departures[i].Line] = append(candidates[:idx], candidates[idx+1:]...)
-				if ns.ComputedTime != "--:--" && ns.ComputedTime != departures[i].ScheduledTime {
-					departures[i].ActualTime = ns.ComputedTime
-				}
 				if ns.ActualPlatform != "" {
 					departures[i].Platform = ns.ActualPlatform
 				} else if ns.Platform != "" && departures[i].Platform == "" {
