@@ -144,10 +144,7 @@
 	}
 
 	function detectFullscreen() {
-		return (
-			!!document.fullscreenElement ||
-			window.innerHeight >= screen.height - 40
-		);
+		return !!document.fullscreenElement || window.innerHeight >= screen.height - 40;
 	}
 
 	function onFullscreenChange() {
