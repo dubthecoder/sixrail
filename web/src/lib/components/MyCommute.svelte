@@ -36,6 +36,7 @@
 	let departures = $state<Departure[]>([]);
 	let alerts = $state<Alert[]>(untrack(() => initialAlerts));
 	let showSettings = $state(false);
+	let fetchError = $state(false);
 
 	function greeting(): string {
 		const h = torontoHour();
@@ -66,20 +67,23 @@
 	async function loadDepartures(trip = activeTrip) {
 		if (!trip) {
 			departures = [];
+			fetchError = false;
 			return;
 		}
 		try {
 			departures = await fetchDepartures(trip.originCode, trip.destinationCode);
-		} catch {
-			departures = [];
+			fetchError = false;
+		} catch (err) {
+			fetchError = true;
+			console.error('Failed to load departures:', err);
 		}
 	}
 
 	async function loadAlerts() {
 		try {
 			alerts = await fetchAlerts();
-		} catch {
-			// keep existing alerts on error
+		} catch (err) {
+			console.error('Failed to load alerts:', err);
 		}
 	}
 
@@ -194,6 +198,12 @@
 
 		<!-- Alert banner -->
 		<AlertBanner {alerts} routeNames={activeRouteNames} />
+
+		{#if fetchError}
+			<div class="text-amber-400/70 text-xs text-center py-1 tracking-wider uppercase">
+				Unable to refresh — showing last known data
+			</div>
+		{/if}
 
 		<!-- Split-flap board -->
 		<SplitFlapBoard {departures} maxRows={3} />
