@@ -196,6 +196,8 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 			if fetched, err := h.mx.GetNextService(r.Context(), stopCode); err == nil {
 				nsLines = fetched
 				h.rt.SetNextService(stopCode, fetched)
+			} else {
+				slog.Warn("NextService fetch failed", "stopCode", stopCode, "error", err)
 			}
 		}
 		if nsLines != nil {
