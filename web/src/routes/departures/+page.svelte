@@ -217,7 +217,6 @@
 		if (dep.isInMotion) parts.push({ text: 'EN ROUTE', cls: 'text-green-400' });
 		if (dep.stops && dep.stops.length > 0)
 			parts.push({ text: dep.stops.join(' · '), cls: 'text-gray-400' });
-		if (dep.alert) parts.push({ text: '! ' + dep.alert, cls: 'text-amber-400' });
 		return parts;
 	}
 
@@ -441,6 +440,9 @@
 							</span>
 						</div>
 					{/if}
+					{#if dep.alert}
+						<div class="alert-line text-amber-400">! {dep.alert.toUpperCase()}</div>
+					{/if}
 				</div>
 			{/each}
 
@@ -515,6 +517,9 @@
 								{/each}
 							</span>
 						</div>
+					{/if}
+					{#if dep.alert}
+						<div class="alert-line text-amber-400">! {dep.alert.toUpperCase()}</div>
 					{/if}
 				</div>
 			{/each}
@@ -686,6 +691,14 @@
 		font-size: 0.55em;
 		overflow: hidden;
 		white-space: nowrap;
+	}
+
+	.alert-line {
+		margin-top: 0.1em;
+		font-size: 0.5em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.stops-scroll {
