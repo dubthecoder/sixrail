@@ -2,7 +2,10 @@
 	import { onDestroy } from 'svelte';
 	import { torontoNow } from '$lib/display';
 
-	let { scheduledTime }: { scheduledTime: string } = $props();
+	let {
+		scheduledTime,
+		size = 'large'
+	}: { scheduledTime: string; size?: 'large' | 'small' } = $props();
 
 	let display = $state('--:--');
 
@@ -13,9 +16,14 @@
 		const nowMs = toronto.ms;
 		if (targetMs <= nowMs) targetMs += 24 * 3600 * 1000;
 		const diffMs = targetMs - nowMs;
-		const mins = Math.floor(diffMs / 60000);
+		const totalMins = Math.floor(diffMs / 60000);
 		const secs = Math.floor((diffMs % 60000) / 1000);
-		return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+		if (totalMins >= 60) {
+			const hrs = Math.floor(totalMins / 60);
+			const mins = totalMins % 60;
+			return `${hrs}h ${String(mins).padStart(2, '0')}m`;
+		}
+		return `${String(totalMins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 	}
 
 	let interval: ReturnType<typeof setInterval> | undefined;
@@ -35,9 +43,13 @@
 	});
 </script>
 
-<div class="countdown" role="timer" aria-label="Time until next departure">
-	<span class="label text-gray-500 text-xs uppercase tracking-widest">Next train in</span>
-	<span class="time font-mono text-amber-400 tabular-nums">{display}</span>
+<div class="countdown" class:countdown-small={size === 'small'} role="timer" aria-label="Time until departure">
+	{#if size === 'large'}
+		<span class="label text-gray-500 text-xs uppercase tracking-widest">Next train in</span>
+	{/if}
+	<span class="time font-mono text-amber-400 tabular-nums" class:time-small={size === 'small'}
+		>{display}</span
+	>
 </div>
 
 <style>
@@ -55,5 +67,16 @@
 	.time {
 		font-size: 2rem;
 		letter-spacing: 0.1em;
+	}
+
+	.countdown-small {
+		padding: 6px 14px;
+		min-width: auto;
+		background: transparent;
+	}
+
+	.time-small {
+		font-size: 1rem;
+		opacity: 0.7;
 	}
 </style>

@@ -18,6 +18,7 @@ export type Departure = {
 	cars?: string;
 	isInMotion?: boolean;
 	isCancelled?: boolean;
+	isExpress?: boolean;
 	alert?: string;
 	routeType?: number;
 };

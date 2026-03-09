@@ -44,7 +44,8 @@ type StaticStore struct {
 	stopIndex map[string][]ScheduledDeparture // stopID → sorted departures
 	stopCodes map[string][]string             // stopCode → []stopID (parent + children)
 	services  map[string]gtfs.Service         // serviceID → service
-	tripIndex map[string]TripInfo             // tripID → TripInfo
+	tripIndex     map[string]TripInfo             // tripID → TripInfo
+	maxRouteStops map[string]int                  // routeID → max stop count across all trips
 }
 
 // NewStaticStore creates a StaticStore and loads the given GTFS ZIP data.
@@ -185,6 +186,14 @@ func (s *StaticStore) load(zipData []byte) error {
 		}
 	}
 
+	// --- Max stop count per route (for express detection) ---
+	maxRouteStops := make(map[string]int)
+	for _, ti := range tripIndex {
+		if len(ti.Stops) > maxRouteStops[ti.RouteID] {
+			maxRouteStops[ti.RouteID] = len(ti.Stops)
+		}
+	}
+
 	s.mu.Lock()
 	s.stops = stops
 	s.stopNames = stopNames
@@ -193,6 +202,7 @@ func (s *StaticStore) load(zipData []byte) error {
 	s.stopCodes = stopCodes
 	s.services = services
 	s.tripIndex = tripIndex
+	s.maxRouteStops = maxRouteStops
 	s.loaded = true
 	s.mu.Unlock()
 
@@ -266,6 +276,18 @@ func (s *StaticStore) RemainingStopNames(tripID string, departureStopIDs []strin
 		}
 	}
 	return names
+}
+
+// IsExpress returns true if a trip has fewer stops than the maximum for its route.
+func (s *StaticStore) IsExpress(tripID string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	trip, ok := s.tripIndex[tripID]
+	if !ok {
+		return false
+	}
+	max := s.maxRouteStops[trip.RouteID]
+	return max > 0 && len(trip.Stops) < max
 }
 
 func (s *StaticStore) GetRoute(id string) (models.Route, bool) {

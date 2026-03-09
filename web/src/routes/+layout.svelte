@@ -46,11 +46,12 @@
 			name: 'Rail Six',
 			url: 'https://railsix.com',
 			description:
-				'Real-time GO Transit departure board and commute tracker. Track trains, delays, and platform info for your daily commute.',
+				'Real-time GO Train schedule and commute tracker for Toronto. Live departure times, delays, and platform info for all GO Transit stations across the Greater Toronto Area.',
 			applicationCategory: 'TravelApplication',
 			operatingSystem: 'Web',
 			offers: { '@type': 'Offer', price: '0', priceCurrency: 'CAD' },
-			author: { '@type': 'Organization', name: 'Teclara Technologies Inc' }
+			author: { '@type': 'Organization', name: 'Teclara Technologies Inc' },
+			areaServed: { '@type': 'Place', name: 'Greater Toronto Area, Ontario, Canada' }
 		})
 	);
 

@@ -193,6 +193,22 @@
 		}
 	});
 
+	// Detect express Union departures: fewer stops than the max for that service
+	let maxStopsByService = $derived.by(() => {
+		const map = new Map<string, number>();
+		for (const d of departures) {
+			const count = d.stops?.length ?? 0;
+			const prev = map.get(d.service) ?? 0;
+			if (count > prev) map.set(d.service, count);
+		}
+		return map;
+	});
+
+	function isUnionExpress(dep: UnionDeparture): boolean {
+		const max = maxStopsByService.get(dep.service) ?? 0;
+		return max > 0 && (dep.stops?.length ?? 0) < max;
+	}
+
 	type MetaPart = { text: string; cls: string };
 
 	function buildMetaParts(dep: {
@@ -238,19 +254,22 @@
 </script>
 
 <svelte:head>
-	<title>{selectedStopName || 'Union Station'} GO Departures — Rail Six</title>
+	<title>{selectedStopName || 'Union Station'} GO Train Departures & Schedule — Rail Six</title>
 	<meta
 		name="description"
-		content="Live GO Transit departure board — real-time train times, platforms, and delays from {selectedStopName ||
-			'Union Station'} and all GO stations."
+		content="Live GO Train departure board for {selectedStopName || 'Union Station'} — real-time train schedule, platform assignments, and delay alerts for Toronto GO Transit stations."
+	/>
+	<meta
+		name="keywords"
+		content="GO Train departures, {selectedStopName || 'Union Station'} schedule, GO Transit train times, Toronto GO Train, real-time departure board, GO station schedule, GTA train tracker"
 	/>
 	<meta
 		property="og:title"
-		content="{selectedStopName || 'Union Station'} GO Departures — Rail Six"
+		content="{selectedStopName || 'Union Station'} GO Train Departures & Schedule — Rail Six"
 	/>
 	<meta
 		property="og:description"
-		content="Live GO Transit departure board with real-time train times, platforms, and delays."
+		content="Live GO Train departure board for {selectedStopName || 'Union Station'} — real-time schedule, platforms, and delay alerts."
 	/>
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://railsix.com/departures" />
@@ -258,11 +277,11 @@
 	<meta name="twitter:card" content="summary" />
 	<meta
 		name="twitter:title"
-		content="{selectedStopName || 'Union Station'} GO Departures — Rail Six"
+		content="{selectedStopName || 'Union Station'} GO Train Departures — Rail Six"
 	/>
 	<meta
 		name="twitter:description"
-		content="Live GO Transit departure board with real-time train times, platforms, and delays."
+		content="Live GO Train schedule and departures from {selectedStopName || 'Union Station'}. Real-time delays and platform info."
 	/>
 	<meta name="twitter:image" content="https://railsix.com/train.png" />
 </svelte:head>
@@ -386,7 +405,7 @@
 						</span>
 
 						<span class="col-service text-white">
-							{#each padRight(dep.service, 15).split('') as char, j}
+							{#each padRight(dep.service + (isUnionExpress(dep) ? ' EXP' : ''), 19).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
 							{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
@@ -455,7 +474,7 @@
 						</span>
 
 						<span class="col-line text-white">
-							{#each padRight(dep.lineName || dep.line, 15).split('') as char, j}
+							{#each padRight((dep.lineName || dep.line) + (dep.isExpress ? ' EXP' : ''), 19).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
 							{#if dep.stops && dep.stops.length > 0}

@@ -55,7 +55,7 @@
 			</span>
 
 			<span class="col-route text-white">
-				{#each padRight(dep.line, 10).split('') as char, j}
+				{#each padRight(dep.isExpress ? dep.line + ' EXP' : dep.line, 10).split('') as char, j}
 					<SplitFlapChar value={char} delay={20 + j * 10} />
 				{/each}
 			</span>
@@ -67,7 +67,7 @@
 			</span>
 
 			<span class="col-platform text-white">
-				{#each padCenter(compactPlatform(dep.platform ?? '---'), 7).split('') as char, j}
+				{#each padCenter(compactPlatform(dep.platform ?? 'WAIT'), 7).split('') as char, j}
 					<SplitFlapChar value={char} delay={50 + j * 12} />
 				{/each}
 			</span>
@@ -97,7 +97,7 @@
 	.split-flap-board {
 		background: var(--color-surface);
 		border-radius: 8px;
-		padding: 12px;
+		padding: 16px;
 		width: fit-content;
 		margin: 0 auto;
 		overflow: hidden;
@@ -105,10 +105,10 @@
 
 	.board-row {
 		display: grid;
-		grid-template-columns: 5ch 10ch 3ch 7ch 5ch 11ch;
-		gap: 6px;
+		grid-template-columns: 6ch 11ch 4ch 7ch 6ch 12ch;
+		gap: 8px;
 		align-items: center;
-		padding: 4px 0;
+		padding: 6px 0;
 	}
 
 	.board-header-row {
@@ -139,24 +139,24 @@
 	}
 
 	.col-time {
-		font-size: 0.95em;
+		font-size: 1.1em;
 	}
 	.col-route {
-		font-size: 0.85em;
+		font-size: 1em;
 	}
 	.col-cars {
-		font-size: 0.75em;
+		font-size: 0.9em;
 		justify-content: center;
 	}
 	.col-platform {
-		font-size: 0.85em;
+		font-size: 1em;
 		justify-content: center;
 	}
 	.col-arrival {
-		font-size: 0.85em;
+		font-size: 1em;
 	}
 	.col-status {
-		font-size: 0.8em;
+		font-size: 0.95em;
 		letter-spacing: 0.05em;
 	}
 

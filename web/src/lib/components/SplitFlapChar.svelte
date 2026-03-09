@@ -86,7 +86,7 @@
 	.split-flap-char {
 		position: relative;
 		display: inline-block;
-		width: 1ch;
+		width: 1.15ch;
 		height: 1.4em;
 		background: var(--color-surface-input);
 		border-radius: 2px;

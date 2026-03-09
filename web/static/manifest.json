@@ -1,7 +1,7 @@
 {
 	"name": "Rail Six",
 	"short_name": "Rail Six",
-	"description": "GO Transit real-time commuter tracker — free, no ads",
+	"description": "Real-time GO Train schedule and commute tracker for Toronto — free, no ads",
 	"start_url": "/",
 	"display": "standalone",
 	"background_color": "#111111",

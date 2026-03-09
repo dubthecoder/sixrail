@@ -90,9 +90,9 @@
 		</div>
 
 		<div class="panel-body space-y-6">
-			<!-- To Work trip -->
+			<!-- To Station trip -->
 			<section>
-				<h3 class="section-title">To Work</h3>
+				<h3 class="section-title">To Station</h3>
 				<div class="space-y-2">
 					<StationSearchInput
 						{stops}
@@ -109,9 +109,9 @@
 				</div>
 			</section>
 
-			<!-- To Home trip -->
+			<!-- To Union trip -->
 			<section>
-				<h3 class="section-title">To Home</h3>
+				<h3 class="section-title">To Union</h3>
 				<div class="space-y-2">
 					<StationSearchInput
 						{stops}

@@ -32,6 +32,7 @@ type Departure struct {
 	Cars         string   `json:"cars,omitempty"` // number of coaches
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
+	IsExpress     bool     `json:"isExpress,omitempty"`
 	RouteType     int      `json:"routeType"`
 }
 

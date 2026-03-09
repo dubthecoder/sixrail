@@ -48,16 +48,17 @@
 	}
 
 	let tick = $state(0);
-	let nextDeparture = $derived.by(() => {
+	let upcomingDepartures = $derived.by(() => {
 		tick; // re-evaluate each tick
 		const now = torontoNow();
-		return (
-			departures.find((d) => {
-				const [h, m] = d.scheduledTime.split(':').map(Number);
-				return now.todayAt(h, m) > now.ms;
-			}) ?? null
-		);
+		return departures.filter((d) => {
+			const [h, m] = d.scheduledTime.split(':').map(Number);
+			return now.todayAt(h, m) > now.ms;
+		});
 	});
+
+	let nextDeparture = $derived(upcomingDepartures[0] ?? null);
+	let followUpDepartures = $derived(upcomingDepartures.slice(1, 3));
 
 	async function loadDepartures(trip = activeTrip) {
 		if (!trip) {
@@ -117,6 +118,10 @@
 		prevNext = nextDeparture;
 	});
 
+	function shortName(name: string): string {
+		return name.replace(/\s+(GO|Station|GO Station)$/i, '').trim();
+	}
+
 	// Pass empty array — AlertBanner shows all alerts when no route filter is provided
 	// TODO: store route names in commute trips to enable route-specific filtering
 	let activeRouteNames = $derived<string[]>([]);
@@ -156,7 +161,7 @@
 				}}
 				disabled={!commuteState.toWork}
 			>
-				To Work
+				{commuteState.toWork ? `To ${shortName(commuteState.toWork.destinationName)}` : 'To Station'}
 			</button>
 			<button
 				class="flex-1 py-2 text-xs uppercase tracking-wider transition-colors"
@@ -169,7 +174,7 @@
 				}}
 				disabled={!commuteState.toHome}
 			>
-				To Home
+				{commuteState.toHome ? `To ${shortName(commuteState.toHome.destinationName)}` : 'To Union'}
 			</button>
 		</div>
 
@@ -190,8 +195,27 @@
 
 		<!-- Countdown -->
 		{#if nextDeparture}
-			<div class="flex justify-center mt-2">
+			<div class="flex flex-col items-center mt-2 gap-1">
 				<CountdownTimer scheduledTime={nextDeparture.scheduledTime} />
+				{#if nextDeparture.delayMinutes && nextDeparture.delayMinutes > 0}
+					{@const [dh, dm] = nextDeparture.scheduledTime.split(':').map(Number)}
+					{@const totalMin = dh * 60 + dm + nextDeparture.delayMinutes}
+					{@const delayedTime = `${String(Math.floor(totalMin / 60) % 24).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`}
+					<div class="flex items-center gap-2 text-amber-400/60 text-xs mt-1">
+						<span class="uppercase tracking-wider">With Delay</span>
+						<CountdownTimer scheduledTime={delayedTime} size="small" />
+					</div>
+				{/if}
+				{#if followUpDepartures.length > 0}
+					<div class="flex gap-4 mt-1">
+						{#each followUpDepartures as dep}
+							<div class="flex items-center gap-1.5 text-gray-500 text-xs">
+								<span class="uppercase tracking-wider">{dep.scheduledTime.slice(0, 5)}</span>
+								<CountdownTimer scheduledTime={dep.scheduledTime} size="small" />
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		{/if}
 
@@ -209,17 +233,16 @@
 				Real-time GO Transit tracking with live departures, delay alerts, and countdown timers for
 				your daily commute.
 			</p>
-			<p class="text-gray-500 text-[10px] font-mono mt-3 leading-relaxed text-center">
-				View live departure times, platform info, and delay updates for your saved commute. Visit
-				the <a href="/departures" class="text-amber-400 hover:text-amber-300 transition-colors"
-					>departure board</a
-				> for a full split-flap display of upcoming trains at any station.
-			</p>
 			<p class="text-gray-500 text-[9px] font-mono mt-3 leading-relaxed">
 				Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
 				Always confirm with official sources before travelling.
 			</p>
 			<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-3">
+				<a href="mailto:hello@railsix.com" class="hover:text-gray-400 transition-colors"
+					>hello@railsix.com</a
+				>
+			</p>
+			<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-2">
 				&copy; {new Date().getFullYear()}
 				<a
 					href="https://teclara.tech"
