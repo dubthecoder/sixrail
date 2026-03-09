@@ -417,6 +417,15 @@
 					</span>
 				</div>
 
+				{#if isMobile && dep.stops && dep.stops.length > 0}
+					<div
+						class="direction-line {dep.stops.some((s) => s.toUpperCase().includes('UNION'))
+							? 'text-green-400'
+							: 'text-purple-400'}"
+					>
+						TO {dep.stops[dep.stops.length - 1].toUpperCase()}
+					</div>
+				{/if}
 				{#if metaParts.length > 0}
 					<div class="meta-line" use:marquee>
 						<span class="stops-scroll">
@@ -572,6 +581,15 @@
 	.departure-row.cancelled .col-cars {
 		text-decoration: line-through;
 		opacity: 0.4;
+	}
+
+	.direction-line {
+		font-size: 0.5em;
+		font-weight: bold;
+		letter-spacing: 0.05em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.direction-tag {
