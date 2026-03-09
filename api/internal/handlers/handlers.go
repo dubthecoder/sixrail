@@ -95,6 +95,7 @@ type departureResponse struct {
 	Cars          string   `json:"cars,omitempty"`
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
+	IsExpress     bool     `json:"isExpress,omitempty"`
 	Alert         string   `json:"alert,omitempty"`
 	RouteType     int      `json:"routeType"`
 }
@@ -217,6 +218,29 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Enrich with cached Union departures for platform data.
+	// Union departures (polled every 30s) have platform assignments that
+	// NextService may not provide. Match by line name + scheduled time.
+	if unionDeps := h.rt.GetUnionDepartures(); len(unionDeps) > 0 {
+		type udKey struct{ service, time string }
+		udMap := make(map[udKey]string, len(unionDeps))
+		for _, ud := range unionDeps {
+			p := strings.TrimSpace(ud.Platform)
+			if p != "" && p != "-" {
+				udMap[udKey{strings.ToUpper(ud.Service), ud.Time}] = p
+			}
+		}
+		for i := range departures {
+			if departures[i].Platform != "" {
+				continue
+			}
+			key := udKey{strings.ToUpper(departures[i].LineName), departures[i].ScheduledTime}
+			if p, ok := udMap[key]; ok {
+				departures[i].Platform = p
+			}
+		}
+	}
+
 	// Return slim response (no destination, routeColor).
 	alertTexts := h.routeAlertTexts()
 	slim := make([]departureResponse, len(departures))
@@ -234,6 +258,7 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 			Cars:          d.Cars,
 			IsInMotion:    d.IsInMotion,
 			IsCancelled:   d.IsCancelled,
+			IsExpress:     d.IsExpress,
 			Alert:         alertTexts[strings.ToUpper(d.LineName)],
 			RouteType:     d.RouteType,
 		}

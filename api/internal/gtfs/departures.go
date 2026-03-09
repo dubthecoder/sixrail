@@ -51,6 +51,10 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 	for _, stopID := range stopIDs {
 		departures := static.DeparturesForStop(stopID)
 		for _, dep := range departures {
+			// Skip trips where this stop is the final stop (arrivals, not departures).
+			if static.IsLastStop(dep.TripID, stopIDs) {
+				continue
+			}
 			// Try both today and yesterday (for past-midnight services).
 			for _, serviceDay := range []time.Time{today, yesterday} {
 				if !static.IsServiceActive(dep.ServiceID, serviceDay) {
@@ -176,21 +180,27 @@ func findTripUpdate(tripID string, rt *RealtimeCache) (RawTripUpdate, bool) {
 }
 
 // findDelay returns the departure delay for a trip at a given stop.
+// Per GTFS-RT spec, delays propagate to subsequent stops: if a stop has no
+// explicit update, it inherits the delay from the previous stop in the trip.
 // Returns zero if no update exists.
 func findDelay(tripID, stopID string, rt *RealtimeCache) time.Duration {
 	update, ok := findTripUpdate(tripID, rt)
 	if !ok {
 		return 0
 	}
-	// Walk stop time updates; last matching stop wins (propagation).
-	var delay time.Duration
+	var propagated time.Duration
 	for _, stu := range update.StopTimeUpdates {
+		if stu.DepartureDelay != 0 {
+			propagated = stu.DepartureDelay
+		}
 		if stu.StopID == stopID {
-			delay = stu.DepartureDelay
-			break
+			if stu.DepartureDelay != 0 {
+				return stu.DepartureDelay
+			}
+			return propagated
 		}
 	}
-	return delay
+	return 0
 }
 
 // extractTripNumber returns the Metrolinx trip number from a GTFS trip ID.

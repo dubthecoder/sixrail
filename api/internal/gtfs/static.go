@@ -283,6 +283,24 @@ func (s *StaticStore) RemainingStopNames(tripID string, departureStopIDs []strin
 	return names
 }
 
+// IsLastStop returns true if any of the given stop IDs is the final stop of the trip.
+// Trips where the queried stop is the last stop are arrivals, not departures.
+func (s *StaticStore) IsLastStop(tripID string, stopIDs []string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	trip, ok := s.tripIndex[tripID]
+	if !ok || len(trip.Stops) == 0 {
+		return false
+	}
+	lastStopID := trip.Stops[len(trip.Stops)-1].StopID
+	for _, id := range stopIDs {
+		if id == lastStopID {
+			return true
+		}
+	}
+	return false
+}
+
 // IsExpress returns true if a trip skips stops compared to the longest trip
 // on the same route with the same origin and destination stops.
 func (s *StaticStore) IsExpress(tripID string) bool {
