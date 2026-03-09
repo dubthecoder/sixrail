@@ -147,6 +147,13 @@ type RealtimeCache struct {
 	unionDepartures []models.UnionDeparture
 	nextService     map[string]ttlEntry[[]models.NextServiceLine] // keyed by stopCode, 30s TTL
 	fares            map[string]ttlEntry[[]models.FareInfo]         // keyed by "from|to", 1h TTL
+
+	// Staleness tracking
+	alertsUpdatedAt        time.Time
+	tripUpdatesUpdatedAt   time.Time
+	serviceGlanceUpdatedAt time.Time
+	cancelledTripsUpdatedAt time.Time
+	unionDepsUpdatedAt     time.Time
 }
 
 func NewRealtimeCache() *RealtimeCache {
@@ -163,6 +170,7 @@ func (rc *RealtimeCache) SetAlerts(alerts []models.Alert) {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 	rc.alerts = alerts
+	rc.alertsUpdatedAt = time.Now()
 }
 
 func (rc *RealtimeCache) GetAlerts() []models.Alert {
@@ -177,6 +185,7 @@ func (rc *RealtimeCache) SetTripUpdates(updates map[string]RawTripUpdate) {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 	rc.tripUpdates = updates
+	rc.tripUpdatesUpdatedAt = time.Now()
 }
 
 func (rc *RealtimeCache) GetTripUpdate(tripID string) (RawTripUpdate, bool) {
@@ -190,6 +199,7 @@ func (rc *RealtimeCache) SetServiceGlance(entries map[string]models.ServiceGlanc
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 	rc.serviceGlance = entries
+	rc.serviceGlanceUpdatedAt = time.Now()
 }
 
 // GetServiceGlanceEntry returns the service glance data for a trip number.
@@ -215,6 +225,7 @@ func (rc *RealtimeCache) SetCancelledTrips(cancelled map[string]bool) {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 	rc.cancelledTrips = cancelled
+	rc.cancelledTripsUpdatedAt = time.Now()
 }
 
 func (rc *RealtimeCache) IsTripCancelled(tripNumber string) bool {
@@ -229,6 +240,7 @@ func (rc *RealtimeCache) SetUnionDepartures(deps []models.UnionDeparture) {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 	rc.unionDepartures = deps
+	rc.unionDepsUpdatedAt = time.Now()
 }
 
 func (rc *RealtimeCache) GetUnionDepartures() []models.UnionDeparture {
@@ -237,6 +249,93 @@ func (rc *RealtimeCache) GetUnionDepartures() []models.UnionDeparture {
 	out := make([]models.UnionDeparture, len(rc.unionDepartures))
 	copy(out, rc.unionDepartures)
 	return out
+}
+
+// --- Staleness tracking ---
+
+const maxCacheAge = 5 * time.Minute
+
+// CacheStatus reports the age of each polled data source and whether any are stale.
+type CacheStatus struct {
+	AlertsAge        time.Duration `json:"alertsAge"`
+	TripUpdatesAge   time.Duration `json:"tripUpdatesAge"`
+	ServiceGlanceAge time.Duration `json:"serviceGlanceAge"`
+	UnionDepsAge     time.Duration `json:"unionDepsAge"`
+	Stale            bool          `json:"stale"`
+}
+
+func (rc *RealtimeCache) Status() CacheStatus {
+	rc.mu.RLock()
+	defer rc.mu.RUnlock()
+	now := time.Now()
+	s := CacheStatus{}
+	if !rc.alertsUpdatedAt.IsZero() {
+		s.AlertsAge = now.Sub(rc.alertsUpdatedAt)
+	}
+	if !rc.tripUpdatesUpdatedAt.IsZero() {
+		s.TripUpdatesAge = now.Sub(rc.tripUpdatesUpdatedAt)
+	}
+	if !rc.serviceGlanceUpdatedAt.IsZero() {
+		s.ServiceGlanceAge = now.Sub(rc.serviceGlanceUpdatedAt)
+	}
+	if !rc.unionDepsUpdatedAt.IsZero() {
+		s.UnionDepsAge = now.Sub(rc.unionDepsUpdatedAt)
+	}
+	s.Stale = (s.AlertsAge > maxCacheAge && !rc.alertsUpdatedAt.IsZero()) ||
+		(s.TripUpdatesAge > maxCacheAge && !rc.tripUpdatesUpdatedAt.IsZero()) ||
+		(s.ServiceGlanceAge > maxCacheAge && !rc.serviceGlanceUpdatedAt.IsZero()) ||
+		(s.UnionDepsAge > maxCacheAge && !rc.unionDepsUpdatedAt.IsZero())
+	return s
+}
+
+func (rc *RealtimeCache) clearStaleAlerts() {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	if !rc.alertsUpdatedAt.IsZero() && time.Since(rc.alertsUpdatedAt) > maxCacheAge {
+		slog.Warn("clearing stale alerts cache", "age", time.Since(rc.alertsUpdatedAt))
+		rc.alerts = nil
+		rc.alertsUpdatedAt = time.Time{}
+	}
+}
+
+func (rc *RealtimeCache) clearStaleTripUpdates() {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	if !rc.tripUpdatesUpdatedAt.IsZero() && time.Since(rc.tripUpdatesUpdatedAt) > maxCacheAge {
+		slog.Warn("clearing stale trip updates cache", "age", time.Since(rc.tripUpdatesUpdatedAt))
+		rc.tripUpdates = make(map[string]RawTripUpdate)
+		rc.tripUpdatesUpdatedAt = time.Time{}
+	}
+}
+
+func (rc *RealtimeCache) clearStaleServiceGlance() {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	if !rc.serviceGlanceUpdatedAt.IsZero() && time.Since(rc.serviceGlanceUpdatedAt) > maxCacheAge {
+		slog.Warn("clearing stale service glance cache", "age", time.Since(rc.serviceGlanceUpdatedAt))
+		rc.serviceGlance = make(map[string]models.ServiceGlanceEntry)
+		rc.serviceGlanceUpdatedAt = time.Time{}
+	}
+}
+
+func (rc *RealtimeCache) clearStaleCancelledTrips() {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	if !rc.cancelledTripsUpdatedAt.IsZero() && time.Since(rc.cancelledTripsUpdatedAt) > maxCacheAge {
+		slog.Warn("clearing stale cancelled trips cache", "age", time.Since(rc.cancelledTripsUpdatedAt))
+		rc.cancelledTrips = make(map[string]bool)
+		rc.cancelledTripsUpdatedAt = time.Time{}
+	}
+}
+
+func (rc *RealtimeCache) clearStaleUnionDepartures() {
+	rc.mu.Lock()
+	defer rc.mu.Unlock()
+	if !rc.unionDepsUpdatedAt.IsZero() && time.Since(rc.unionDepsUpdatedAt) > maxCacheAge {
+		slog.Warn("clearing stale union departures cache", "age", time.Since(rc.unionDepsUpdatedAt))
+		rc.unionDepartures = nil
+		rc.unionDepsUpdatedAt = time.Time{}
+	}
 }
 
 const (
@@ -504,11 +603,13 @@ func fetchAndCacheAlerts(ctx context.Context, fetcher Fetcher, lookup RouteLooku
 	data, err := fetcher.Fetch(ctx, "/Gtfs/Feed/Alerts")
 	if err != nil {
 		slog.Error("fetching alerts", "error", err)
+		cache.clearStaleAlerts()
 		return
 	}
 	raw, err := ParseAlerts(data)
 	if err != nil {
 		slog.Error("parsing alerts", "error", err)
+		cache.clearStaleAlerts()
 		return
 	}
 	enriched := EnrichAlerts(raw, lookup)
@@ -520,11 +621,13 @@ func fetchAndCacheTripUpdates(ctx context.Context, fetcher Fetcher, cache *Realt
 	data, err := fetcher.Fetch(ctx, "/Gtfs/Feed/TripUpdates")
 	if err != nil {
 		slog.Error("fetching trip updates", "error", err)
+		cache.clearStaleTripUpdates()
 		return
 	}
 	updates, err := ParseTripUpdates(data)
 	if err != nil {
 		slog.Error("parsing trip updates", "error", err)
+		cache.clearStaleTripUpdates()
 		return
 	}
 	cache.SetTripUpdates(updates)
@@ -571,6 +674,7 @@ func fetchAndCacheServiceGlance(ctx context.Context, fetcher ServiceGlanceFetche
 	entries, err := fetcher.GetServiceGlance(ctx)
 	if err != nil {
 		slog.Error("fetching service glance", "error", err)
+		cache.clearStaleServiceGlance()
 		return
 	}
 	m := make(map[string]models.ServiceGlanceEntry, len(entries))
@@ -585,6 +689,7 @@ func fetchAndCacheExceptions(ctx context.Context, fetcher ServiceGlanceFetcher, 
 	cancelled, err := fetcher.GetExceptions(ctx)
 	if err != nil {
 		slog.Error("fetching exceptions", "error", err)
+		cache.clearStaleCancelledTrips()
 		return
 	}
 	cache.SetCancelledTrips(cancelled)
@@ -613,6 +718,7 @@ func fetchAndCacheUnionDepartures(ctx context.Context, fetcher UnionDeparturesFe
 	deps, err := fetcher.GetUnionDepartures(ctx)
 	if err != nil {
 		slog.Error("fetching union departures", "error", err)
+		cache.clearStaleUnionDepartures()
 		return
 	}
 	cache.SetUnionDepartures(deps)
