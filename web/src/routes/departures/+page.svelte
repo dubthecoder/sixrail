@@ -10,7 +10,15 @@
 	} from '$lib/api-client';
 	import type { Stop } from '$lib/api';
 	import SplitFlapChar from '$lib/components/SplitFlapChar.svelte';
-	import { padRight, padCenter, statusText, statusClass } from '$lib/display';
+	import {
+		departureDisplayTime,
+		departureTargetMs,
+		padRight,
+		padCenter,
+		statusText,
+		statusClass,
+		torontoNow
+	} from '$lib/display';
 
 	let { data }: { data: { departures: UnionDeparture[]; stops: Stop[] } } = $props();
 
@@ -70,12 +78,12 @@
 	}
 
 	function sortByScheduledTime(deps: Departure[]): Departure[] {
-		const nowH = new Date().getHours();
-		const toMin = (t: string) => {
-			const h = parseInt(t.slice(0, 2), 10);
-			return (h < 6 && nowH >= 12 ? h + 24 : h) * 60 + parseInt(t.slice(3, 5), 10);
-		};
-		return [...deps].sort((a, b) => toMin(a.scheduledTime) - toMin(b.scheduledTime));
+		const now = torontoNow();
+		return [...deps].sort(
+			(a, b) =>
+				departureTargetMs(departureDisplayTime(a), now) -
+				departureTargetMs(departureDisplayTime(b), now)
+		);
 	}
 
 	// All GTFS departures for the active stop (station view)
@@ -472,7 +480,7 @@
 				<div class="departure-row" class:cancelled={dep.isCancelled}>
 					<div class="flap-row-station">
 						<span class="col-time text-amber-400">
-							{#each padRight(dep.scheduledTime.slice(0, 5), 5).split('') as char, j}
+							{#each padRight(departureDisplayTime(dep).slice(0, 5), 5).split('') as char, j}
 								<SplitFlapChar value={char} delay={j * 15} />
 							{/each}
 						</span>

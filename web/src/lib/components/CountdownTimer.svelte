@@ -1,38 +1,21 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { torontoNow } from '$lib/display';
+	import { formatCountdown } from '$lib/display';
 
 	let { scheduledTime, size = 'large' }: { scheduledTime: string; size?: 'large' | 'small' } =
 		$props();
 
 	let display = $state('--:--');
 
-	function computeCountdown(scheduled: string): string {
-		const [h, m] = scheduled.split(':').map(Number);
-		const toronto = torontoNow();
-		let targetMs = toronto.todayAt(h, m);
-		const nowMs = toronto.ms;
-		if (targetMs <= nowMs) targetMs += 24 * 3600 * 1000;
-		const diffMs = targetMs - nowMs;
-		const totalMins = Math.floor(diffMs / 60000);
-		const secs = Math.floor((diffMs % 60000) / 1000);
-		if (totalMins >= 60) {
-			const hrs = Math.floor(totalMins / 60);
-			const mins = totalMins % 60;
-			return `${hrs}h ${String(mins).padStart(2, '0')}m`;
-		}
-		return `${String(totalMins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-	}
-
 	let interval: ReturnType<typeof setInterval> | undefined;
 
 	$effect(() => {
 		// Re-run whenever scheduledTime changes
 		const st = scheduledTime;
-		display = computeCountdown(st);
+		display = formatCountdown(st);
 		if (interval) clearInterval(interval);
 		interval = setInterval(() => {
-			display = computeCountdown(st);
+			display = formatCountdown(st);
 		}, 1000);
 	});
 

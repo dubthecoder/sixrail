@@ -1,7 +1,7 @@
 <script lang="ts">
 	import SplitFlapChar from './SplitFlapChar.svelte';
 	import type { Departure } from '$lib/api-client';
-	import { padRight, padCenter, compactPlatform } from '$lib/display';
+	import { padRight, padCenter, compactPlatform, departureDisplayTime } from '$lib/display';
 
 	let {
 		departures = [],
@@ -49,7 +49,7 @@
 			class:cancelled={dep.isCancelled || dep.status === 'Cancelled'}
 		>
 			<span class="col-time text-amber-400">
-				{#each formatTime(dep.scheduledTime).split('') as char, j}
+				{#each formatTime(departureDisplayTime(dep)).split('') as char, j}
 					<SplitFlapChar value={char} delay={j * 15} />
 				{/each}
 			</span>

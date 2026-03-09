@@ -23,17 +23,15 @@ import (
 func main() {
 	cfg := config.Load()
 
-	static := gtfsstore.NewEmptyStaticStore()
-
-	// Load GTFS in background so the server starts immediately
-	go func() {
-		loadGTFSIntoStore(cfg.GTFSStaticURL, 5, static)
-		go refreshLoop(cfg.GTFSStaticURL, static, 24*time.Hour)
-	}()
-
-	// Use signal context for graceful shutdown of pollers
+	// Use signal context for graceful shutdown of startup loops and pollers.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	static := gtfsstore.NewEmptyStaticStore()
+
+	// Load GTFS in background so the server starts immediately, but keep retrying
+	// until the store is actually ready instead of falling into a 24-hour gap.
+	go manageGTFS(ctx, cfg.GTFSStaticURL, static, 24*time.Hour)
 
 	// Realtime cache + background pollers
 	rtCache := gtfsstore.NewRealtimeCache()
@@ -64,6 +62,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", h.Health)
+	mux.HandleFunc("GET /api/ready", h.Ready)
 	mux.HandleFunc("GET /api/stops", h.AllStops)
 	mux.HandleFunc("GET /api/departures/{stopCode}", h.StopDepartures)
 	mux.HandleFunc("GET /api/union-departures", h.UnionDepartures)
@@ -100,12 +99,12 @@ func main() {
 }
 
 var allowedGTFSHosts = map[string]bool{
-	"assets.metrolinx.com":    true,
-	"www.metrolinx.com":       true,
-	"metrolinx.com":           true,
-	"api.openmetrolinx.com":   true,
-	"opendata.metrolinx.com":  true,
-	"gtfs.metrolinx.com":      true,
+	"assets.metrolinx.com":   true,
+	"www.metrolinx.com":      true,
+	"metrolinx.com":          true,
+	"api.openmetrolinx.com":  true,
+	"opendata.metrolinx.com": true,
+	"gtfs.metrolinx.com":     true,
 }
 
 func downloadURL(rawURL string) ([]byte, error) {
@@ -130,72 +129,133 @@ func downloadURL(rawURL string) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(resp.Body, maxBytes))
 }
 
-// loadGTFSIntoStore attempts to download and parse GTFS data with exponential backoff,
-// loading it into the provided store via Refresh. If all attempts fail, the store
-// remains empty and the API runs in degraded mode.
-func loadGTFSIntoStore(url string, maxAttempts int, store *gtfsstore.StaticStore) {
+// manageGTFS keeps retrying startup loads until the store becomes ready, then
+// switches to the long-lived daily refresh loop.
+func manageGTFS(ctx context.Context, url string, store *gtfsstore.StaticStore, refreshInterval time.Duration) {
+	const startupRetryDelay = time.Minute
+
+	for {
+		if loadGTFSIntoStore(ctx, url, 5, store) {
+			refreshLoop(ctx, url, store, refreshInterval)
+			return
+		}
+
+		slog.Warn("GTFS static data unavailable after startup attempts, retrying soon", "retryIn", startupRetryDelay)
+		if !sleepContext(ctx, startupRetryDelay) {
+			return
+		}
+	}
+}
+
+// loadGTFSIntoStore attempts to download and parse GTFS data with exponential
+// backoff, loading it into the provided store via Refresh. It returns true once
+// the store is ready and false if the attempt batch failed or the context was
+// cancelled.
+func loadGTFSIntoStore(ctx context.Context, url string, maxAttempts int, store *gtfsstore.StaticStore) bool {
 	backoff := 2 * time.Second
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if ctx.Err() != nil {
+			return false
+		}
+
 		slog.Info("downloading GTFS static data", "url", url, "attempt", attempt, "maxAttempts", maxAttempts)
 		zipData, err := downloadURL(url)
 		if err != nil {
 			slog.Error("failed to download GTFS static data", "error", err, "attempt", attempt)
 			if attempt < maxAttempts {
 				slog.Info("retrying GTFS download", "backoff", backoff)
-				time.Sleep(backoff)
+				if !sleepContext(ctx, backoff) {
+					return false
+				}
 				backoff *= 2
 			}
 			continue
 		}
+
 		if err := store.Refresh(zipData); err != nil {
 			slog.Error("failed to parse GTFS static data", "error", err, "attempt", attempt)
 			if attempt < maxAttempts {
 				slog.Info("retrying GTFS download", "backoff", backoff)
-				time.Sleep(backoff)
+				if !sleepContext(ctx, backoff) {
+					return false
+				}
 				backoff *= 2
 			}
 			continue
 		}
+
 		slog.Info("GTFS static data loaded successfully")
-		return
+		return true
 	}
-	slog.Warn("all GTFS download attempts failed, running in degraded mode")
+
+	return false
 }
 
 // refreshLoop periodically re-downloads GTFS static data. On failure it retries
 // with exponential backoff (up to 3 attempts) before waiting for the next interval.
-func refreshLoop(url string, static *gtfsstore.StaticStore, interval time.Duration) {
+func refreshLoop(ctx context.Context, url string, static *gtfsstore.StaticStore, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	for range ticker.C {
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("GTFS refresh loop stopped")
+			return
+		case <-ticker.C:
+		}
+
 		const maxRetries = 3
 		backoff := 5 * time.Second
 		var refreshed bool
 		for attempt := 1; attempt <= maxRetries; attempt++ {
+			if ctx.Err() != nil {
+				return
+			}
+
 			slog.Info("refreshing GTFS static data", "attempt", attempt)
 			data, err := downloadURL(url)
 			if err != nil {
 				slog.Error("failed to download GTFS refresh", "error", err, "attempt", attempt)
 				if attempt < maxRetries {
-					time.Sleep(backoff)
+					if !sleepContext(ctx, backoff) {
+						return
+					}
 					backoff *= 2
 				}
 				continue
 			}
+
 			if err := static.Refresh(data); err != nil {
 				slog.Error("failed to parse GTFS refresh", "error", err, "attempt", attempt)
 				if attempt < maxRetries {
-					time.Sleep(backoff)
+					if !sleepContext(ctx, backoff) {
+						return
+					}
 					backoff *= 2
 				}
 				continue
 			}
+
 			refreshed = true
 			break
 		}
+
 		if !refreshed {
 			slog.Warn("GTFS refresh failed after all retries, will try again next interval")
 		}
+	}
+}
+
+func sleepContext(ctx context.Context, d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
 	}
 }
 

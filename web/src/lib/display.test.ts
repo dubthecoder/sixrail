@@ -2,9 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Departure } from './api-client';
 import {
+	departureDisplayTime,
+	departureTargetMs,
+	formatCountdown,
+	isUpcomingDeparture,
 	compactPlatform,
 	padCenter,
 	padRight,
+	shiftHHMM,
 	statusClass,
 	statusText,
 	torontoHour,
@@ -34,6 +39,44 @@ describe('display helpers', () => {
 		expect(padRight('lw', 5)).toBe('LW   ');
 		expect(compactPlatform('11 & 12')).toBe('11&12');
 		expect(padCenter('go', 6)).toBe('  GO  ');
+	});
+
+	it('uses actual or delayed departure times and handles overnight rollovers', () => {
+		const delayed = {
+			line: 'LW',
+			scheduledTime: '23:55',
+			delayMinutes: 20,
+			status: 'Delayed +20m'
+		} satisfies Departure;
+		const actual = { ...delayed, actualTime: '00:07' };
+
+		expect(shiftHHMM('23:55', 20)).toBe('00:15');
+		expect(departureDisplayTime(delayed)).toBe('00:15');
+		expect(departureDisplayTime(actual)).toBe('00:07');
+
+		const lateNightNow = {
+			ms: (23 * 3600 + 50 * 60) * 1000,
+			todayAt: (h: number, m: number) => (h * 3600 + m * 60) * 1000
+		};
+		expect(departureTargetMs('00:15', lateNightNow)).toBe((24 * 3600 + 15 * 60) * 1000);
+		expect(isUpcomingDeparture(delayed, lateNightNow)).toBe(true);
+		expect(formatCountdown('00:15', lateNightNow)).toBe('25:00');
+	});
+
+	it('does not wrap ordinary past departures to the next day', () => {
+		const past = {
+			line: 'LW',
+			scheduledTime: '08:00',
+			status: 'On Time'
+		} satisfies Departure;
+		const morningNow = {
+			ms: (8 * 3600 + 30 * 60) * 1000,
+			todayAt: (h: number, m: number) => (h * 3600 + m * 60) * 1000
+		};
+
+		expect(departureTargetMs('08:00', morningNow)).toBe(8 * 3600 * 1000);
+		expect(isUpcomingDeparture(past, morningNow)).toBe(false);
+		expect(formatCountdown('08:00', morningNow)).toBe('00:00');
 	});
 
 	it('returns cancel and delay states with the expected priority', () => {

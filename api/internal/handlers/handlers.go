@@ -34,6 +34,15 @@ func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
+func (h *Handlers) Ready(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if !h.static.Ready() {
+		writeJSON(w, http.StatusServiceUnavailable, []byte(`{"status":"starting","reason":"GTFS static data loading"}`))
+		return
+	}
+	w.Write([]byte(`{"status":"ok"}`))
+}
+
 func writeJSON(w http.ResponseWriter, status int, data []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -77,12 +86,13 @@ type departureResponse struct {
 	Line          string   `json:"line"`
 	LineName      string   `json:"lineName,omitempty"`
 	ScheduledTime string   `json:"scheduledTime"`
+	ActualTime    string   `json:"actualTime,omitempty"`
 	ArrivalTime   string   `json:"arrivalTime,omitempty"`
 	Status        string   `json:"status"`
 	Platform      string   `json:"platform,omitempty"`
 	DelayMinutes  int      `json:"delayMinutes,omitempty"`
 	Stops         []string `json:"stops,omitempty"`
-	Cars         string   `json:"cars,omitempty"`
+	Cars          string   `json:"cars,omitempty"`
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
 	Alert         string   `json:"alert,omitempty"`
@@ -198,8 +208,8 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 				}
 				// Remove matched candidate so it can't be reused by another departure
 				byLine[departures[i].Line] = append(candidates[:idx], candidates[idx+1:]...)
-				if ns.ComputedTime != "--:--" {
-					departures[i].ScheduledTime = ns.ComputedTime
+				if ns.ComputedTime != "--:--" && ns.ComputedTime != departures[i].ScheduledTime {
+					departures[i].ActualTime = ns.ComputedTime
 				}
 				if ns.ActualPlatform != "" {
 					departures[i].Platform = ns.ActualPlatform
@@ -218,6 +228,7 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 			Line:          d.Line,
 			LineName:      d.LineName,
 			ScheduledTime: d.ScheduledTime,
+			ActualTime:    d.ActualTime,
 			ArrivalTime:   d.ArrivalTime,
 			Status:        d.Status,
 			Platform:      d.Platform,

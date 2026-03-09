@@ -77,6 +77,41 @@ func TestHealthHandler_DegradedWithoutStatic(t *testing.T) {
 	}
 }
 
+func TestReadyHandler_ReturnsServiceUnavailableUntilStaticLoads(t *testing.T) {
+	h := handlers.New(nil, nil, nil)
+	req := httptest.NewRequest("GET", "/api/ready", nil)
+	w := httptest.NewRecorder()
+
+	h.Ready(w, req)
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", w.Code)
+	}
+	var body map[string]string
+	json.Unmarshal(w.Body.Bytes(), &body)
+	if body["status"] != "starting" {
+		t.Fatalf("expected starting, got %s", body["status"])
+	}
+}
+
+func TestReadyHandler_ReturnsOKWhenStaticLoaded(t *testing.T) {
+	store := mustBuildStore(t)
+	h := handlers.New(store, nil, nil)
+	req := httptest.NewRequest("GET", "/api/ready", nil)
+	w := httptest.NewRecorder()
+
+	h.Ready(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	var body map[string]string
+	json.Unmarshal(w.Body.Bytes(), &body)
+	if body["status"] != "ok" {
+		t.Fatalf("expected ok, got %s", body["status"])
+	}
+}
+
 func TestAllStops(t *testing.T) {
 	store := mustBuildStore(t)
 	h := handlers.New(store, nil, nil)

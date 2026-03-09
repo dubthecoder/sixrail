@@ -7,7 +7,7 @@
 	import type { Alert } from '$lib/api';
 	import type { Departure } from '$lib/api-client';
 	import { fetchDepartures, fetchAlerts } from '$lib/api-client';
-	import { torontoHour, torontoNow } from '$lib/display';
+	import { departureDisplayTime, isUpcomingDeparture, torontoHour, torontoNow } from '$lib/display';
 	import { track } from '$lib/track';
 	import { untrack } from 'svelte';
 	import SplitFlapBoard from './SplitFlapBoard.svelte';
@@ -51,13 +51,7 @@
 	let upcomingDepartures = $derived.by(() => {
 		tick; // re-evaluate each tick
 		const now = torontoNow();
-		return departures.filter((d) => {
-			const [h, m] = d.scheduledTime.split(':').map(Number);
-			const effectiveMin = h * 60 + m + (d.delayMinutes || 0);
-			const effectiveH = Math.floor(effectiveMin / 60) % 24;
-			const effectiveM = effectiveMin % 60;
-			return now.todayAt(effectiveH, effectiveM) > now.ms;
-		});
+		return departures.filter((d) => isUpcomingDeparture(d, now));
 	});
 
 	let nextDeparture = $derived(upcomingDepartures[0] ?? null);
@@ -201,22 +195,20 @@
 		<!-- Countdown -->
 		{#if nextDeparture}
 			<div class="flex flex-col items-center mt-2 gap-1">
-				<CountdownTimer scheduledTime={nextDeparture.scheduledTime} />
-				{#if nextDeparture.delayMinutes && nextDeparture.delayMinutes > 0}
-					{@const [dh, dm] = nextDeparture.scheduledTime.split(':').map(Number)}
-					{@const totalMin = dh * 60 + dm + nextDeparture.delayMinutes}
-					{@const delayedTime = `${String(Math.floor(totalMin / 60) % 24).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`}
+				<CountdownTimer scheduledTime={departureDisplayTime(nextDeparture)} />
+				{#if departureDisplayTime(nextDeparture) !== nextDeparture.scheduledTime}
 					<div class="flex items-center gap-2 text-amber-400/60 text-xs mt-1">
-						<span class="uppercase tracking-wider">With Delay</span>
-						<CountdownTimer scheduledTime={delayedTime} size="small" />
+						<span class="uppercase tracking-wider">Scheduled</span>
+						<CountdownTimer scheduledTime={nextDeparture.scheduledTime} size="small" />
 					</div>
 				{/if}
 				{#if followUpDepartures.length > 0}
 					<div class="flex gap-4 mt-1">
 						{#each followUpDepartures as dep}
 							<div class="flex items-center gap-1.5 text-gray-500 text-xs">
-								<span class="uppercase tracking-wider">{dep.scheduledTime.slice(0, 5)}</span>
-								<CountdownTimer scheduledTime={dep.scheduledTime} size="small" />
+								<span class="uppercase tracking-wider">{departureDisplayTime(dep).slice(0, 5)}</span
+								>
+								<CountdownTimer scheduledTime={departureDisplayTime(dep)} size="small" />
 							</div>
 						{/each}
 					</div>

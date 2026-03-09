@@ -10,6 +10,7 @@ export type Departure = {
 	line: string;
 	lineName?: string;
 	scheduledTime: string;
+	actualTime?: string;
 	arrivalTime?: string;
 	status: string;
 	platform?: string;

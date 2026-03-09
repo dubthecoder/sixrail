@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	torontoTZ    = "America/Toronto"
-	maxDepartures = 20
+	torontoTZ      = "America/Toronto"
+	maxDepartures  = 20
 	lookAheadHours = 3 // hours of departures to return
 )
 
@@ -130,6 +130,9 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 			Stops:         static.RemainingStopNames(c.dep.TripID, stopIDs),
 			IsExpress:     static.IsExpress(c.dep.TripID),
 			RouteType:     route.Type,
+		}
+		if delayMin > 0 {
+			dep.ActualTime = formatTime(c.adjusted)
 		}
 		if len(destStopIDs) > 0 {
 			arrDur, ok := static.ArrivalTimeAtStop(c.dep.TripID, destStopIDs, stopIDs...)

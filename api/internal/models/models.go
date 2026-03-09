@@ -22,14 +22,15 @@ type Departure struct {
 	Line          string   `json:"line"`
 	LineName      string   `json:"lineName,omitempty"`
 	Destination   string   `json:"destination"`
-	ScheduledTime string   `json:"scheduledTime"` // "HH:MM" local time
+	ScheduledTime string   `json:"scheduledTime"`         // "HH:MM" local time
+	ActualTime    string   `json:"actualTime,omitempty"`  // "HH:MM" real-time adjusted departure
 	ArrivalTime   string   `json:"arrivalTime,omitempty"` // "HH:MM" arrival at destination stop
-	Status        string   `json:"status"`        // "On Time", "Delayed +Xm", "Cancelled"
+	Status        string   `json:"status"`                // "On Time", "Delayed +Xm", "Cancelled"
 	Platform      string   `json:"platform,omitempty"`
 	RouteColor    string   `json:"routeColor,omitempty"`
 	DelayMinutes  int      `json:"delayMinutes,omitempty"`
 	Stops         []string `json:"stops,omitempty"`
-	Cars         string   `json:"cars,omitempty"` // number of coaches
+	Cars          string   `json:"cars,omitempty"` // number of coaches
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
 	IsExpress     bool     `json:"isExpress,omitempty"`
