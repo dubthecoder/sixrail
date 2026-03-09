@@ -161,7 +161,9 @@
 				}}
 				disabled={!commuteState.toWork}
 			>
-				{commuteState.toWork ? `To ${shortName(commuteState.toWork.destinationName)}` : 'To Station'}
+				{commuteState.toWork
+					? `To ${shortName(commuteState.toWork.destinationName)}`
+					: 'To Station'}
 			</button>
 			<button
 				class="flex-1 py-2 text-xs uppercase tracking-wider transition-colors"

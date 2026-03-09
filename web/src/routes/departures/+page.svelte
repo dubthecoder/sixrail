@@ -257,11 +257,13 @@
 	<title>{selectedStopName || 'Union Station'} GO Train Departures & Schedule — Rail Six</title>
 	<meta
 		name="description"
-		content="Live GO Train departure board for {selectedStopName || 'Union Station'} — real-time train schedule, platform assignments, and delay alerts for Toronto GO Transit stations."
+		content="Live GO Train departure board for {selectedStopName ||
+			'Union Station'} — real-time train schedule, platform assignments, and delay alerts for Toronto GO Transit stations."
 	/>
 	<meta
 		name="keywords"
-		content="GO Train departures, {selectedStopName || 'Union Station'} schedule, GO Transit train times, Toronto GO Train, real-time departure board, GO station schedule, GTA train tracker"
+		content="GO Train departures, {selectedStopName ||
+			'Union Station'} schedule, GO Transit train times, Toronto GO Train, real-time departure board, GO station schedule, GTA train tracker"
 	/>
 	<meta
 		property="og:title"
@@ -269,7 +271,8 @@
 	/>
 	<meta
 		property="og:description"
-		content="Live GO Train departure board for {selectedStopName || 'Union Station'} — real-time schedule, platforms, and delay alerts."
+		content="Live GO Train departure board for {selectedStopName ||
+			'Union Station'} — real-time schedule, platforms, and delay alerts."
 	/>
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://railsix.com/departures" />
@@ -281,7 +284,8 @@
 	/>
 	<meta
 		name="twitter:description"
-		content="Live GO Train schedule and departures from {selectedStopName || 'Union Station'}. Real-time delays and platform info."
+		content="Live GO Train schedule and departures from {selectedStopName ||
+			'Union Station'}. Real-time delays and platform info."
 	/>
 	<meta name="twitter:image" content="https://railsix.com/train.png" />
 </svelte:head>

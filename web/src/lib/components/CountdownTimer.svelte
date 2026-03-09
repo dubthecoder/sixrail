@@ -2,10 +2,8 @@
 	import { onDestroy } from 'svelte';
 	import { torontoNow } from '$lib/display';
 
-	let {
-		scheduledTime,
-		size = 'large'
-	}: { scheduledTime: string; size?: 'large' | 'small' } = $props();
+	let { scheduledTime, size = 'large' }: { scheduledTime: string; size?: 'large' | 'small' } =
+		$props();
 
 	let display = $state('--:--');
 
@@ -43,7 +41,12 @@
 	});
 </script>
 
-<div class="countdown" class:countdown-small={size === 'small'} role="timer" aria-label="Time until departure">
+<div
+	class="countdown"
+	class:countdown-small={size === 'small'}
+	role="timer"
+	aria-label="Time until departure"
+>
 	{#if size === 'large'}
 		<span class="label text-gray-500 text-xs uppercase tracking-widest">Next train in</span>
 	{/if}

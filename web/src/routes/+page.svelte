@@ -14,7 +14,10 @@
 		content="GO Train, GO Transit, Toronto train schedule, GO Train times, GTA commute tracker, real-time train tracker, GO Transit departures, Union Station GO, Toronto commuter rail"
 	/>
 	<meta name="author" content="Teclara Technologies Inc" />
-	<meta property="og:title" content="Rail Six — GO Train Schedule & Real-Time Toronto Commute Tracker" />
+	<meta
+		property="og:title"
+		content="Rail Six — GO Train Schedule & Real-Time Toronto Commute Tracker"
+	/>
 	<meta
 		property="og:description"
 		content="Track your GO Train commute in real time. Live departure times, delays, and platform info for all GO Transit stations across the Greater Toronto Area."
