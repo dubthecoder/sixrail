@@ -658,7 +658,7 @@ func StartOccupancyPoller(ctx context.Context, fetcher Fetcher, cache *RealtimeC
 }
 
 func fetchAndCacheOccupancy(ctx context.Context, fetcher Fetcher, cache *RealtimeCache) {
-	data, err := fetcher.Fetch(ctx, "/Gtfs/Feed/VehiclePosition.json")
+	data, err := fetcher.Fetch(ctx, "/Gtfs/Feed/VehiclePosition")
 	if err != nil {
 		slog.Error("fetching vehicle positions for occupancy", "error", err)
 		return
