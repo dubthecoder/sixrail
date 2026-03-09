@@ -180,10 +180,11 @@
 			font-size: 11px;
 			padding: 8px;
 			width: 100%;
+			box-sizing: border-box;
 		}
 
 		.board-row {
-			grid-template-columns: 6ch 5ch 4ch 6ch 6ch 1fr;
+			grid-template-columns: 6fr 5fr 4fr 6fr 6fr 9fr;
 			gap: 2px;
 		}
 	}

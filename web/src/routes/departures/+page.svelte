@@ -143,8 +143,15 @@
 		}
 	}
 
+	function detectFullscreen() {
+		return (
+			!!document.fullscreenElement ||
+			window.innerHeight >= screen.height - 40
+		);
+	}
+
 	function onFullscreenChange() {
-		isFullscreen = !!document.fullscreenElement;
+		isFullscreen = detectFullscreen();
 		document.body.classList.toggle('is-fullscreen', isFullscreen);
 		requestAnimationFrame(fitFullscreen);
 	}
@@ -166,6 +173,9 @@
 		loadNetworkHealth();
 		healthInterval = setInterval(loadNetworkHealth, 30_000);
 		document.addEventListener('fullscreenchange', onFullscreenChange);
+		window.addEventListener('resize', onFullscreenChange);
+		isFullscreen = detectFullscreen();
+		document.body.classList.toggle('is-fullscreen', isFullscreen);
 		mobileQuery = window.matchMedia('(max-width: 480px)');
 		isMobile = mobileQuery.matches;
 		mobileQuery.addEventListener('change', (e) => (isMobile = e.matches));
@@ -177,6 +187,7 @@
 		clearInterval(healthInterval);
 		if (typeof document !== 'undefined') {
 			document.removeEventListener('fullscreenchange', onFullscreenChange);
+			window.removeEventListener('resize', onFullscreenChange);
 		}
 	});
 
@@ -389,7 +400,7 @@
 
 					<span class="col-line text-white">
 						{#if isMobile}
-							{#each padRight(dep.line + (dep.isExpress ? '*' : ''), 3).split('') as char, j}
+							{#each padRight((dep.lineName || dep.line) + (dep.isExpress ? ' EXP' : ''), 12).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
 						{:else}
@@ -742,7 +753,7 @@
 		}
 
 		.flap-row-station {
-			grid-template-columns: 5ch 3ch 3ch 5ch 7ch;
+			grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
 			gap: 0.3em;
 		}
 	}
