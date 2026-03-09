@@ -28,19 +28,21 @@ func New(static *gtfsstore.StaticStore, rt *gtfsstore.RealtimeCache, mx *metroli
 func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if !h.static.Ready() {
-		w.Write([]byte(`{"status":"starting","reason":"GTFS static data loading"}`))
+		writeJSON(w, http.StatusServiceUnavailable,
+			[]byte(`{"status":"starting","reason":"GTFS static data loading"}`))
 		return
 	}
-	w.Write([]byte(`{"status":"ok"}`))
+	writeJSON(w, http.StatusOK, []byte(`{"status":"ok"}`))
 }
 
 func (h *Handlers) Ready(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if !h.static.Ready() {
-		writeJSON(w, http.StatusServiceUnavailable, []byte(`{"status":"starting","reason":"GTFS static data loading"}`))
+		writeJSON(w, http.StatusServiceUnavailable,
+			[]byte(`{"status":"starting","reason":"GTFS static data loading"}`))
 		return
 	}
-	w.Write([]byte(`{"status":"ok"}`))
+	writeJSON(w, http.StatusOK, []byte(`{"status":"ok"}`))
 }
 
 func writeJSON(w http.ResponseWriter, status int, data []byte) {
