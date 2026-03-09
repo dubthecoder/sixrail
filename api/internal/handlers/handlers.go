@@ -344,7 +344,7 @@ func (h *Handlers) Fares(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if h.mx == nil {
-		respondJSON(w, []fareResponse{})
+		jsonError(w, "fare data unavailable", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -354,8 +354,8 @@ func (h *Handlers) Fares(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fetched, err := h.mx.GetFares(r.Context(), fromCode, toCode)
 		if err != nil {
-			slog.Warn("fares fetch failed", "error", err)
-			respondJSON(w, []fareResponse{})
+			slog.Warn("fares fetch failed", "from", fromCode, "to", toCode, "error", err)
+			jsonError(w, "unable to fetch fares", http.StatusBadGateway)
 			return
 		}
 		fares = fetched
