@@ -154,9 +154,11 @@ func GetDepartures(stopCode, destCode string, now time.Time, static *StaticStore
 			dep.IsInMotion = sg.IsInMotion
 		}
 
-		// Enrich with Union departures board info (platform, proceed/wait status).
+		// Enrich with Union departures board info (proceed/wait status).
+		// Platform is only applied for Union Station queries — other stations have their own platforms.
 		if ud, ok := rt.GetUnionDepartureByTrip(tripNumber); ok {
-			if ud.Platform != "" && dep.Platform == "" {
+			isUnion := strings.EqualFold(stopCode, "UN")
+			if isUnion && ud.Platform != "" && dep.Platform == "" {
 				dep.Platform = ud.Platform
 			}
 			if ud.Info != "" {

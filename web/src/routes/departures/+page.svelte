@@ -397,7 +397,7 @@
 
 					<span class="col-line text-white">
 						{#if isMobile}
-							{#each padRight((dep.lineName || dep.line) + (dep.isExpress ? ' EXP' : ''), 12).split('') as char, j}
+							{#each padRight((dep.lineName || dep.line) + (dep.isExpress ? ' EXP' : ''), 14).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
 						{:else}
