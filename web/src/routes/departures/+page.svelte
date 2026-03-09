@@ -9,6 +9,7 @@
 	import type { Stop } from '$lib/api';
 	import SplitFlapChar from '$lib/components/SplitFlapChar.svelte';
 	import {
+		compactPlatform,
 		departureDisplayTime,
 		departureTargetMs,
 		padRight,
@@ -21,6 +22,7 @@
 	let { data }: { data: { stops: Stop[] } } = $props();
 
 	let isFullscreen = $state(false);
+	let isMobile = $state(false);
 	let clock = $state('');
 	let clockInterval: ReturnType<typeof setInterval>;
 	let pollInterval: ReturnType<typeof setInterval>;
@@ -154,6 +156,8 @@
 		}
 	});
 
+	let mobileQuery: MediaQueryList;
+
 	onMount(() => {
 		updateClock();
 		clockInterval = setInterval(updateClock, 1000);
@@ -162,6 +166,9 @@
 		loadNetworkHealth();
 		healthInterval = setInterval(loadNetworkHealth, 30_000);
 		document.addEventListener('fullscreenchange', onFullscreenChange);
+		mobileQuery = window.matchMedia('(max-width: 480px)');
+		isMobile = mobileQuery.matches;
+		mobileQuery.addEventListener('change', (e) => (isMobile = e.matches));
 	});
 
 	onDestroy(() => {
@@ -373,15 +380,21 @@
 					</span>
 
 					<span class="col-line text-white">
-						{#each padRight((dep.lineName || dep.line) + (dep.isExpress ? ' EXP' : ''), 19).split('') as char, j}
-							<SplitFlapChar value={char} delay={20 + j * 10} />
-						{/each}
-						{#if dep.stops && dep.stops.length > 0}
-							<span
-								class="direction-tag {dep.stops.some((s) => s.toUpperCase().includes('UNION'))
-									? 'text-green-400'
-									: 'text-purple-400'}">TO {dep.stops[dep.stops.length - 1].toUpperCase()}</span
-							>
+						{#if isMobile}
+							{#each padRight(dep.line + (dep.isExpress ? '*' : ''), 3).split('') as char, j}
+								<SplitFlapChar value={char} delay={20 + j * 10} />
+							{/each}
+						{:else}
+							{#each padRight((dep.lineName || dep.line) + (dep.isExpress ? ' EXP' : ''), 19).split('') as char, j}
+								<SplitFlapChar value={char} delay={20 + j * 10} />
+							{/each}
+							{#if dep.stops && dep.stops.length > 0}
+								<span
+									class="direction-tag {dep.stops.some((s) => s.toUpperCase().includes('UNION'))
+										? 'text-green-400'
+										: 'text-purple-400'}">TO {dep.stops[dep.stops.length - 1].toUpperCase()}</span
+								>
+							{/if}
 						{/if}
 					</span>
 
@@ -392,7 +405,7 @@
 					</span>
 
 					<span class="col-plat text-white">
-						{#each padCenter(dep.platform || '--', 5).split('') as char, j}
+						{#each padCenter(compactPlatform(dep.platform || '--'), 5).split('') as char, j}
 							<SplitFlapChar value={char} delay={50 + j * 12} />
 						{/each}
 					</span>
@@ -517,7 +530,7 @@
 
 	.flap-row-station {
 		display: grid;
-		grid-template-columns: 5ch 1fr 3ch 8ch 7ch;
+		grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
 		gap: 0.4em;
 		align-items: center;
 	}
@@ -703,7 +716,7 @@
 		}
 
 		.flap-row-station {
-			grid-template-columns: 5ch 1fr 3ch 8ch 7ch;
+			grid-template-columns: 5ch 3ch 3ch 5ch 7ch;
 			gap: 0.3em;
 		}
 	}
