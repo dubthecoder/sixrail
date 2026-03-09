@@ -217,6 +217,7 @@
 		if (dep.isInMotion) parts.push({ text: 'EN ROUTE', cls: 'text-green-400' });
 		if (dep.stops && dep.stops.length > 0)
 			parts.push({ text: dep.stops.join(' · '), cls: 'text-gray-400' });
+		if (dep.alert) parts.push({ text: '! ' + dep.alert, cls: 'text-amber-400' });
 		return parts;
 	}
 
@@ -409,7 +410,6 @@
 							{#each padRight(dep.service + (isUnionExpress(dep) ? ' EXP' : ''), 19).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
-							{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
 						</span>
 
 						<span class="col-cars text-gray-400">
@@ -485,7 +485,6 @@
 										: 'text-purple-400'}">TO {dep.stops[dep.stops.length - 1].toUpperCase()}</span
 								>
 							{/if}
-							{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
 						</span>
 
 						<span class="col-cars text-gray-400">
@@ -680,15 +679,6 @@
 		white-space: nowrap;
 		letter-spacing: 0.05em;
 		font-weight: bold;
-	}
-
-	.alert-inline {
-		color: var(--color-accent);
-		font-size: 0.5em;
-		margin-left: 0.3em;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.meta-line {
