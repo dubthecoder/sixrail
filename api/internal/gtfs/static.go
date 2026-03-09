@@ -256,17 +256,20 @@ func (s *StaticStore) GetTrip(tripID string) (TripInfo, bool) {
 
 // RemainingStopNames returns the names of stops after the given stopIDs in a trip.
 func (s *StaticStore) RemainingStopNames(tripID string, departureStopIDs []string) []string {
-	trip, ok := s.GetTrip(tripID)
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	trip, ok := s.tripIndex[tripID]
 	if !ok {
 		return nil
 	}
+
 	depSet := make(map[string]bool, len(departureStopIDs))
 	for _, id := range departureStopIDs {
 		depSet[id] = true
 	}
+
 	found := false
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	var names []string
 	for _, ts := range trip.Stops {
 		if !found {
