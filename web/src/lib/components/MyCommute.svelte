@@ -241,11 +241,7 @@
 		{/if}
 
 		<footer class="pt-2 pb-4 text-center max-w-sm mx-auto">
-			<p class="text-gray-500 text-[11px] font-mono leading-relaxed">
-				Real-time GO Transit tracking with live departures, delay alerts, and countdown timers for
-				your daily commute.
-			</p>
-			<p class="text-gray-500 text-[9px] font-mono mt-3 leading-relaxed">
+			<p class="text-gray-500 text-[9px] font-mono leading-relaxed">
 				Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
 				Always confirm with official sources before travelling.
 			</p>
@@ -253,9 +249,7 @@
 				<a href="mailto:hello@railsix.com" class="hover:text-gray-400 transition-colors"
 					>hello@railsix.com</a
 				>
-			</p>
-			<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-2">
-				&copy; {new Date().getFullYear()}
+				&middot; &copy; {new Date().getFullYear()}
 				<a
 					href="https://teclara.tech"
 					target="_blank"
