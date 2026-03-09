@@ -121,7 +121,9 @@
 	{@html '<script type="application/ld+json">' + breadcrumbJsonLd + '<' + '/script>'}
 </svelte:head>
 
-{@render children()}
+<main class="w-full">
+	{@render children()}
+</main>
 
 {#if showInstallBanner}
 	<div class="install-banner">

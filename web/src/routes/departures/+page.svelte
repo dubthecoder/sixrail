@@ -44,7 +44,9 @@
 	let dropdownOpen = $state(false);
 	let searchQuery = $state('');
 
-	const trainStops = $derived(data.stops.filter((s) => /\bGO$/.test(s.name)));
+	const trainStops = $derived(
+		data.stops.filter((s) => /\bGO$/.test(s.name)).sort((a, b) => a.name.localeCompare(b.name))
+	);
 
 	let filteredStops = $derived(
 		searchQuery.length > 0
@@ -393,13 +395,13 @@
 						</span>
 
 						<span class="col-plat text-white">
-							{#each padCenter(dep.platform || '--', 5).split('') as char, j}
+							{#each padCenter(dep.platform || '--', 7).split('') as char, j}
 								<SplitFlapChar value={char} delay={50 + j * 12} />
 							{/each}
 						</span>
 
 						<span class="col-info {infoClass(dep.info)}">
-							{#each padRight(dep.isCancelled ? 'CANCEL' : dep.info, 7).split('') as char, j}
+							{#each padCenter(dep.isCancelled ? 'CANCEL' : dep.info, 7).split('') as char, j}
 								<SplitFlapChar value={char} delay={60 + j * 10} />
 							{/each}
 						</span>
@@ -452,6 +454,9 @@
 							{#each padRight(dep.lineName || dep.line, 15).split('') as char, j}
 								<SplitFlapChar value={char} delay={20 + j * 10} />
 							{/each}
+							{#if dep.stops && dep.stops.length > 0}
+								<span class="direction-tag {dep.stops.some((s) => s.toUpperCase().includes('UNION')) ? 'text-green-400' : 'text-purple-400'}">TO {dep.stops[dep.stops.length - 1].toUpperCase()}</span>
+							{/if}
 							{#if dep.alert}<span class="alert-inline">! {dep.alert.toUpperCase()}</span>{/if}
 						</span>
 
@@ -462,7 +467,7 @@
 						</span>
 
 						<span class="col-plat text-white">
-							{#each padCenter(dep.platform || '--', 5).split('') as char, j}
+							{#each padCenter(dep.platform || '--', 7).split('') as char, j}
 								<SplitFlapChar value={char} delay={50 + j * 12} />
 							{/each}
 						</span>
@@ -585,14 +590,14 @@
 
 	.flap-row {
 		display: grid;
-		grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
+		grid-template-columns: 5ch 1fr 3ch 7ch 7ch;
 		gap: 0.4em;
 		align-items: center;
 	}
 
 	.flap-row-station {
 		display: grid;
-		grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
+		grid-template-columns: 5ch 1fr 3ch 7ch 7ch;
 		gap: 0.4em;
 		align-items: center;
 	}
@@ -617,6 +622,7 @@
 	.col-plat {
 		font-size: 0.85em;
 		justify-content: center;
+		padding-right: 0.3em;
 	}
 	.col-cars {
 		font-size: 0.8em;
@@ -638,6 +644,14 @@
 	.departure-row.cancelled .col-cars {
 		text-decoration: line-through;
 		opacity: 0.4;
+	}
+
+	.direction-tag {
+		font-size: 0.5em;
+		margin-left: 0.4em;
+		white-space: nowrap;
+		letter-spacing: 0.05em;
+		font-weight: bold;
 	}
 
 	.alert-inline {
@@ -772,11 +786,11 @@
 		}
 
 		.flap-row {
-			grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
+			grid-template-columns: 5ch 1fr 3ch 7ch 7ch;
 			gap: 0.3em;
 		}
 		.flap-row-station {
-			grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
+			grid-template-columns: 5ch 1fr 3ch 7ch 7ch;
 			gap: 0.3em;
 		}
 	}

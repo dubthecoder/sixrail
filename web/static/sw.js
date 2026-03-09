@@ -110,17 +110,3 @@ self.addEventListener('fetch', (event) => {
 			.catch(() => caches.match(event.request))
 	);
 });
-
-// Handle notification requests from the main thread
-self.addEventListener('message', (event) => {
-	if (event.data?.type === 'SHOW_NOTIFICATION') {
-		const { title, body } = event.data;
-		self.registration.showNotification(title, {
-			body,
-			icon: '/icons/icon-192.png',
-			badge: '/icons/icon-192.png',
-			tag: 'delay-alert',
-			renotify: true
-		});
-	}
-});

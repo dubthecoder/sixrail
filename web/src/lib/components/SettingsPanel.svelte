@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, untrack } from 'svelte';
-	import { commute, notificationPrefs } from '$lib/stores/commute';
+	import { commute } from '$lib/stores/commute';
 	import type { CommuteTrip } from '$lib/stores/commute';
 	import type { Stop } from '$lib/api';
 	import { track } from '$lib/track';
@@ -12,14 +12,10 @@
 		toWork: null as CommuteTrip | null,
 		toHome: null as CommuteTrip | null
 	});
-	let notifState = $state({ enabled: false, thresholdMinutes: 5 as 5 | 10 | 15 });
-
 	const unsubCommute = commute.subscribe((s) => (commuteState = s));
-	const unsubNotif = notificationPrefs.subscribe((s) => (notifState = s));
 
 	onDestroy(() => {
 		unsubCommute();
-		unsubNotif();
 	});
 
 	function findStopByCode(code: string | undefined): Stop | null {
@@ -67,30 +63,8 @@
 
 	function clearAll() {
 		commute.clear();
-		notificationPrefs.reset();
 		track('settings-clear-all');
 		onClose();
-	}
-
-	async function handleNotificationToggle(enabled: boolean) {
-		if (!enabled) {
-			notificationPrefs.setEnabled(false);
-			return;
-		}
-		if (typeof Notification === 'undefined') {
-			notificationPrefs.setEnabled(false);
-			return;
-		}
-		if (Notification.permission === 'granted') {
-			notificationPrefs.setEnabled(true);
-			return;
-		}
-		if (Notification.permission === 'denied') {
-			notificationPrefs.setEnabled(false);
-			return;
-		}
-		const permission = await Notification.requestPermission();
-		notificationPrefs.setEnabled(permission === 'granted');
 	}
 </script>
 
@@ -154,33 +128,6 @@
 				</div>
 			</section>
 
-			<!-- Notifications -->
-			<section>
-				<h3 class="section-title">Notifications</h3>
-				<label class="flex items-center gap-3 cursor-pointer">
-					<input
-						type="checkbox"
-						checked={notifState.enabled}
-						onchange={(e) => handleNotificationToggle((e.target as HTMLInputElement).checked)}
-						class="accent-amber-400"
-					/>
-					<span class="text-white text-sm font-mono">Notify me if delayed</span>
-				</label>
-				{#if notifState.enabled}
-					<div class="flex gap-2 mt-2">
-						{#each [5, 10, 15] as mins}
-							<button
-								class="threshold-btn font-mono text-xs py-1 px-3 rounded border"
-								class:active={notifState.thresholdMinutes === mins}
-								onclick={() => notificationPrefs.setThreshold(mins as 5 | 10 | 15)}
-							>
-								+{mins}m
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</section>
-
 			<!-- Actions -->
 			<div class="flex gap-3">
 				<button
@@ -233,15 +180,5 @@
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 		margin-bottom: 8px;
-	}
-	.threshold-btn {
-		border-color: #333;
-		color: #999;
-		background: #1e1e1e;
-	}
-	.threshold-btn.active {
-		border-color: #f5a623;
-		color: #f5a623;
-		background: #1a1200;
 	}
 </style>

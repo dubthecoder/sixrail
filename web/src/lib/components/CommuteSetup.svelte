@@ -155,29 +155,29 @@
 		{/if}
 	</div>
 
-	<footer class="pt-4 pb-2 text-center max-w-xs flex-shrink">
+	<footer class="pt-4 pb-2 text-center max-w-sm flex-shrink">
 		<p class="text-gray-500 text-[11px] font-mono leading-relaxed">
 			Real-time GO Transit tracking with live departures, delay alerts, and countdown timers for
 			your daily commute.
 		</p>
-		<p class="text-gray-600 text-[10px] font-mono mt-3 leading-relaxed text-left">
+		<p class="text-gray-500 text-[10px] font-mono mt-3 leading-relaxed text-center">
 			Set up your commute by selecting your origin and destination stations for each direction. Once
-			configured, you'll see live departure times, platform info, and delay notifications. You can
+			configured, you'll see live departure times, platform info, and delay updates. You can
 			also visit the <a href="/departures" class="text-amber-400 hover:text-amber-300 transition-colors"
 				>departure board</a
 			> for a full split-flap display of upcoming trains at any station.
 		</p>
-		<p class="text-gray-700 text-[9px] font-mono mt-3 leading-relaxed">
+		<p class="text-gray-500 text-[9px] font-mono mt-3 leading-relaxed">
 			Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
 			Always confirm with official sources before travelling.
 		</p>
-		<p class="text-gray-600 text-[10px] tracking-wide font-mono mt-3">
+		<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-3">
 			&copy; {new Date().getFullYear()}
 			<a
-				href="https://wadhah.com"
+				href="https://teclara.tech"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="hover:text-gray-400 transition-colors">Wadhah Hussain</a
+				class="hover:text-gray-400 transition-colors">Teclara Technologies Inc.</a
 			>
 		</p>
 	</footer>

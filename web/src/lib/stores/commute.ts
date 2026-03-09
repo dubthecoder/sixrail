@@ -15,11 +15,6 @@ export interface CommuteStore {
 	toHome: CommuteTrip | null;
 }
 
-export interface NotificationPrefs {
-	enabled: boolean;
-	thresholdMinutes: 5 | 10 | 15;
-}
-
 function safeParse<T>(key: string, fallback: T): T {
 	try {
 		const raw = localStorage.getItem(key);
@@ -57,42 +52,7 @@ function createCommuteStore() {
 	};
 }
 
-function createNotificationStore() {
-	const defaults: NotificationPrefs = { enabled: false, thresholdMinutes: 5 };
-	const { subscribe, update, set } = writable<NotificationPrefs>(defaults);
-
-	return {
-		subscribe,
-		/** Call once from onMount to load saved state from localStorage */
-		hydrate() {
-			if (browser) {
-				const saved = safeParse<NotificationPrefs | null>('notificationPrefs', null);
-				if (saved) set(saved);
-			}
-		},
-		setEnabled(enabled: boolean) {
-			update((s) => {
-				const next = { ...s, enabled };
-				if (browser) localStorage.setItem('notificationPrefs', JSON.stringify(next));
-				return next;
-			});
-		},
-		setThreshold(thresholdMinutes: 5 | 10 | 15) {
-			update((s) => {
-				const next = { ...s, thresholdMinutes };
-				if (browser) localStorage.setItem('notificationPrefs', JSON.stringify(next));
-				return next;
-			});
-		},
-		reset() {
-			if (browser) localStorage.removeItem('notificationPrefs');
-			set(defaults);
-		}
-	};
-}
-
 export const commute = createCommuteStore();
-export const notificationPrefs = createNotificationStore();
 
 /** Returns which direction to show based on time of day, respecting manual override */
 export function getActiveDirection(

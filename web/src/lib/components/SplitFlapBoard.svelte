@@ -67,7 +67,7 @@
 			</span>
 
 			<span class="col-platform text-white">
-				{#each padCenter(compactPlatform(dep.platform ?? '---'), 5).split('') as char, j}
+				{#each padCenter(compactPlatform(dep.platform ?? '---'), 7).split('') as char, j}
 					<SplitFlapChar value={char} delay={50 + j * 12} />
 				{/each}
 			</span>
@@ -98,13 +98,14 @@
 		background: #111;
 		border-radius: 8px;
 		padding: 12px;
-		width: 100%;
+		width: fit-content;
+		margin: 0 auto;
 		overflow: hidden;
 	}
 
 	.board-row {
 		display: grid;
-		grid-template-columns: 5ch 10ch 3ch 5ch 5ch 11ch;
+		grid-template-columns: 5ch 10ch 3ch 7ch 5ch 11ch;
 		gap: 6px;
 		align-items: center;
 		padding: 4px 0;
