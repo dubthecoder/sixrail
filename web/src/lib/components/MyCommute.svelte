@@ -53,7 +53,10 @@
 		const now = torontoNow();
 		return departures.filter((d) => {
 			const [h, m] = d.scheduledTime.split(':').map(Number);
-			return now.todayAt(h, m) > now.ms;
+			const effectiveMin = h * 60 + m + (d.delayMinutes || 0);
+			const effectiveH = Math.floor(effectiveMin / 60) % 24;
+			const effectiveM = effectiveMin % 60;
+			return now.todayAt(effectiveH, effectiveM) > now.ms;
 		});
 	});
 

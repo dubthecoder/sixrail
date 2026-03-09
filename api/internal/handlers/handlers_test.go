@@ -72,8 +72,8 @@ func TestHealthHandler_DegradedWithoutStatic(t *testing.T) {
 	}
 	var body map[string]string
 	json.Unmarshal(w.Body.Bytes(), &body)
-	if body["status"] != "degraded" {
-		t.Fatalf("expected degraded, got %s", body["status"])
+	if body["status"] != "starting" {
+		t.Fatalf("expected starting, got %s", body["status"])
 	}
 }
 

@@ -1,6 +1,6 @@
 module github.com/teclara/railsix/api
 
-go 1.22.5
+go 1.23
 
 require github.com/jamespfennell/gtfs v0.1.24
 

@@ -8,7 +8,9 @@ import (
 	"net/http"
 	neturl "net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 	_ "time/tzdata"
 
@@ -21,16 +23,20 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// Try to download and parse GTFS static data with retries.
-	// If all attempts fail, start in degraded mode (departures unavailable).
-	static := loadGTFSWithRetries(cfg.GTFSStaticURL, 5)
+	static := gtfsstore.NewEmptyStaticStore()
 
-	// Start background GTFS refresh loop (also retries on failure).
-	go refreshLoop(cfg.GTFSStaticURL, static, 24*time.Hour)
+	// Load GTFS in background so the server starts immediately
+	go func() {
+		loadGTFSIntoStore(cfg.GTFSStaticURL, 5, static)
+		go refreshLoop(cfg.GTFSStaticURL, static, 24*time.Hour)
+	}()
+
+	// Use signal context for graceful shutdown of pollers
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	// Realtime cache + background pollers
 	rtCache := gtfsstore.NewRealtimeCache()
-	ctx := context.Background()
 	var mxClient *metrolinx.Client
 	if cfg.MetrolinxAPIKey == "" {
 		slog.Info("METROLINX_API_KEY not set — real-time data unavailable")
@@ -75,10 +81,21 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	slog.Info("starting railsix-api", "port", cfg.Port)
-	if err := srv.ListenAndServe(); err != nil {
-		slog.Error("server failed", "error", err)
-		os.Exit(1)
+
+	go func() {
+		slog.Info("starting railsix-api", "port", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	<-ctx.Done()
+	slog.Info("shutting down gracefully")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("shutdown error", "error", err)
 	}
 }
 
@@ -113,9 +130,10 @@ func downloadURL(rawURL string) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(resp.Body, maxBytes))
 }
 
-// loadGTFSWithRetries attempts to download and parse GTFS data with exponential backoff.
-// If all attempts fail, returns an empty store so the API can start in degraded mode.
-func loadGTFSWithRetries(url string, maxAttempts int) *gtfsstore.StaticStore {
+// loadGTFSIntoStore attempts to download and parse GTFS data with exponential backoff,
+// loading it into the provided store via Refresh. If all attempts fail, the store
+// remains empty and the API runs in degraded mode.
+func loadGTFSIntoStore(url string, maxAttempts int, store *gtfsstore.StaticStore) {
 	backoff := 2 * time.Second
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		slog.Info("downloading GTFS static data", "url", url, "attempt", attempt, "maxAttempts", maxAttempts)
@@ -126,27 +144,22 @@ func loadGTFSWithRetries(url string, maxAttempts int) *gtfsstore.StaticStore {
 				slog.Info("retrying GTFS download", "backoff", backoff)
 				time.Sleep(backoff)
 				backoff *= 2
-				continue
 			}
-			slog.Warn("all GTFS download attempts failed, starting in degraded mode")
-			return gtfsstore.NewEmptyStaticStore()
+			continue
 		}
-		store, err := gtfsstore.NewStaticStore(zipData)
-		if err != nil {
+		if err := store.Refresh(zipData); err != nil {
 			slog.Error("failed to parse GTFS static data", "error", err, "attempt", attempt)
 			if attempt < maxAttempts {
 				slog.Info("retrying GTFS download", "backoff", backoff)
 				time.Sleep(backoff)
 				backoff *= 2
-				continue
 			}
-			slog.Warn("all GTFS parse attempts failed, starting in degraded mode")
-			return gtfsstore.NewEmptyStaticStore()
+			continue
 		}
-		return store
+		slog.Info("GTFS static data loaded successfully")
+		return
 	}
-	// Unreachable, but satisfy the compiler.
-	return gtfsstore.NewEmptyStaticStore()
+	slog.Warn("all GTFS download attempts failed, running in degraded mode")
 }
 
 // refreshLoop periodically re-downloads GTFS static data. On failure it retries

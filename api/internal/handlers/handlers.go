@@ -28,8 +28,7 @@ func New(static *gtfsstore.StaticStore, rt *gtfsstore.RealtimeCache, mx *metroli
 func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if !h.static.Ready() {
-		w.WriteHeader(http.StatusOK) // still pass health checks so the service stays up
-		w.Write([]byte(`{"status":"degraded","reason":"GTFS static data unavailable"}`))
+		w.Write([]byte(`{"status":"starting","reason":"GTFS static data loading"}`))
 		return
 	}
 	w.Write([]byte(`{"status":"ok"}`))
@@ -193,10 +192,12 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 			}
 			for i := range departures {
 				candidates := byLine[departures[i].Line]
-				ns := bestNSMatch(departures[i].ScheduledTime, candidates)
+				ns, idx := bestNSMatch(departures[i].ScheduledTime, candidates)
 				if ns == nil {
 					continue
 				}
+				// Remove matched candidate so it can't be reused by another departure
+				byLine[departures[i].Line] = append(candidates[:idx], candidates[idx+1:]...)
 				if ns.ComputedTime != "--:--" {
 					departures[i].ScheduledTime = ns.ComputedTime
 				}
@@ -232,14 +233,17 @@ func (h *Handlers) StopDepartures(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, slim)
 }
 
-// bestNSMatch returns the NextServiceLine whose ComputedTime is within 10 minutes
-// of the given "HH:MM" scheduled time, or nil if none match.
-func bestNSMatch(scheduledHHMM string, candidates []models.NextServiceLine) *models.NextServiceLine {
+// bestNSMatch returns the NextServiceLine whose ComputedTime is closest to
+// the given "HH:MM" scheduled time within a 10-minute window, plus its index.
+// Returns (nil, -1) if no candidate matches.
+func bestNSMatch(scheduledHHMM string, candidates []models.NextServiceLine) (*models.NextServiceLine, int) {
 	sched, err := time.Parse("15:04", scheduledHHMM)
 	if err != nil {
-		return nil
+		return nil, -1
 	}
 	const window = 10 * time.Minute
+	bestIdx := -1
+	var bestDiff time.Duration
 	for i := range candidates {
 		comp, err := time.Parse("15:04", candidates[i].ComputedTime)
 		if err != nil {
@@ -249,11 +253,15 @@ func bestNSMatch(scheduledHHMM string, candidates []models.NextServiceLine) *mod
 		if diff < 0 {
 			diff = -diff
 		}
-		if diff <= window {
-			return &candidates[i]
+		if diff <= window && (bestIdx < 0 || diff < bestDiff) {
+			bestDiff = diff
+			bestIdx = i
 		}
 	}
-	return nil
+	if bestIdx < 0 {
+		return nil, -1
+	}
+	return &candidates[bestIdx], bestIdx
 }
 
 // All GO Transit train lines with their codes and display names.
