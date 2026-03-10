@@ -1,10 +1,11 @@
 [build]
 builder = "RAILPACK"
+buildCommand = "cd gtfs-static && go build -o /app/out ."
 watchPatterns = ["services/gtfs-static/**", "services/shared/**"]
 checkSuites = "required"
 
 [deploy]
-startCommand = "./out"
+startCommand = "/app/out"
 healthcheckPath = "/ready"
 healthcheckTimeout = 420
 restartPolicyType = "ON_FAILURE"

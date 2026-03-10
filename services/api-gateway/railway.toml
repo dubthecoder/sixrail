@@ -1,10 +1,11 @@
 [build]
 builder = "RAILPACK"
+buildCommand = "cd api-gateway && go build -o /app/out ."
 watchPatterns = ["services/api-gateway/**", "services/shared/**"]
 checkSuites = "required"
 
 [deploy]
-startCommand = "./out"
+startCommand = "/app/out"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

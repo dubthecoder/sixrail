@@ -1,10 +1,11 @@
 [build]
 builder = "RAILPACK"
+buildCommand = "cd departures-api && go build -o /app/out ."
 watchPatterns = ["services/departures-api/**", "services/shared/**"]
 checkSuites = "required"
 
 [deploy]
-startCommand = "./out"
+startCommand = "/app/out"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
