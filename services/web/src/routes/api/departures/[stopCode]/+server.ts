@@ -5,7 +5,7 @@ export const GET: RequestHandler = ({ params, url }) => {
 	const stopCode = encodeURIComponent(params.stopCode);
 	const dest = url.searchParams.get('dest');
 	const path = dest
-		? `/api/departures/${stopCode}?dest=${encodeURIComponent(dest)}`
-		: `/api/departures/${stopCode}`;
+		? `/departures/${stopCode}?dest=${encodeURIComponent(dest)}`
+		: `/departures/${stopCode}`;
 	return proxyFetch(path);
 };
