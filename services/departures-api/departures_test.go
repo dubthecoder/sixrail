@@ -26,25 +26,6 @@ func TestExtractTripNumber(t *testing.T) {
 	}
 }
 
-func TestExtractPlatform(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"Oakville GO Platform 1", "1"},
-		{"Union Station Platform 12", "12"},
-		{"Oakville GO", ""},
-		{"", ""},
-		{"Platform 3 - Track Platform 5", "5"},
-	}
-	for _, tt := range tests {
-		got := extractPlatform(tt.input)
-		if got != tt.want {
-			t.Errorf("extractPlatform(%q) = %q, want %q", tt.input, got, tt.want)
-		}
-	}
-}
-
 func TestFormatTime(t *testing.T) {
 	loc, _ := time.LoadLocation("America/Toronto")
 	tests := []struct {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 	_ "time/tzdata"
@@ -59,6 +60,7 @@ func registerRoutes(mux *http.ServeMux, s *store.StaticStore) {
 	mux.HandleFunc("GET /stops", handleStops(s))
 	mux.HandleFunc("GET /stops/{code}/ids", handleStopIDs(s))
 	mux.HandleFunc("GET /departures/{stopID}", handleDepartures(s))
+	mux.HandleFunc("GET /schedule/{code}", handleSchedule(s))
 	mux.HandleFunc("GET /trips/{tripID}", handleTrip(s))
 	mux.HandleFunc("GET /routes/{routeID}", handleRoute(s))
 	mux.HandleFunc("GET /trips/{tripID}/remaining-stops", handleRemainingStops(s))
@@ -129,6 +131,37 @@ func handleDepartures(s *store.StaticStore) http.HandlerFunc {
 			deps = []store.ScheduledDeparture{}
 		}
 		writeJSON(w, http.StatusOK, deps)
+	}
+}
+
+func handleSchedule(s *store.StaticStore) http.HandlerFunc {
+	loc, err := time.LoadLocation("America/Toronto")
+	if err != nil {
+		panic("failed to load America/Toronto timezone: " + err.Error())
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.Ready() {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "not ready"})
+			return
+		}
+		code := r.PathValue("code")
+		nowStr := r.URL.Query().Get("now")
+		var now time.Time
+		if nowStr != "" {
+			unix, err := strconv.ParseInt(nowStr, 10, 64)
+			if err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid now param"})
+				return
+			}
+			now = time.Unix(unix, 0).In(loc)
+		} else {
+			now = time.Now().In(loc)
+		}
+		candidates := s.ScheduleForStop(code, now, 3*time.Hour)
+		if candidates == nil {
+			candidates = []store.ScheduleCandidate{}
+		}
+		writeJSON(w, http.StatusOK, candidates)
 	}
 }
 

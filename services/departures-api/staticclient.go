@@ -77,6 +77,39 @@ func (sc *StaticClient) get(path string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
+// ScheduleCandidate mirrors gtfs-static's store.ScheduleCandidate.
+type ScheduleCandidate struct {
+	TripID         string   `json:"tripId"`
+	TripNumber     string   `json:"tripNumber"`
+	RouteShortName string   `json:"routeShortName"`
+	RouteLongName  string   `json:"routeLongName"`
+	RouteColor     string   `json:"routeColor"`
+	RouteType      int      `json:"routeType"`
+	Headsign       string   `json:"headsign"`
+	ScheduledTime  string   `json:"scheduledTime"`
+	Platform       string   `json:"platform"`
+	Stops          []string `json:"stops"`
+	IsExpress      bool     `json:"isExpress"`
+	StopID         string   `json:"stopId"`
+	DepartureNano  int64    `json:"departureNano"`
+	ServiceDay     string   `json:"serviceDay"`
+}
+
+// GetSchedule returns pre-filtered departure candidates for a stop code.
+// All filtering (last stop, service active, time window, dedup) is done server-side.
+func (sc *StaticClient) GetSchedule(code string, now time.Time) ([]ScheduleCandidate, error) {
+	path := "/schedule/" + url.PathEscape(code) + "?now=" + fmt.Sprintf("%d", now.Unix())
+	data, err := sc.get(path)
+	if err != nil {
+		return nil, err
+	}
+	var candidates []ScheduleCandidate
+	if err := json.Unmarshal(data, &candidates); err != nil {
+		return nil, fmt.Errorf("decode schedule: %w", err)
+	}
+	return candidates, nil
+}
+
 // StopIDsForCode returns all stop IDs for a stop code.
 func (sc *StaticClient) StopIDsForCode(code string) ([]string, error) {
 	data, err := sc.get("/stops/" + url.PathEscape(code) + "/ids")

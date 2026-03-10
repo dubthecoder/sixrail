@@ -3,6 +3,8 @@ package store
 import (
 	"fmt"
 	"log/slog"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -370,6 +372,187 @@ func (s *StaticStore) DeparturesForStop(stopID string) []ScheduledDeparture {
 	out := make([]ScheduledDeparture, len(src))
 	copy(out, src)
 	return out
+}
+
+// ScheduleCandidate is a pre-filtered departure candidate returned by ScheduleForStop.
+type ScheduleCandidate struct {
+	TripID         string   `json:"tripId"`
+	TripNumber     string   `json:"tripNumber"`
+	RouteShortName string   `json:"routeShortName"`
+	RouteLongName  string   `json:"routeLongName"`
+	RouteColor     string   `json:"routeColor"`
+	RouteType      int      `json:"routeType"`
+	Headsign       string   `json:"headsign"`
+	ScheduledTime  string   `json:"scheduledTime"` // "HH:MM"
+	Platform       string   `json:"platform"`
+	Stops          []string `json:"stops"`    // remaining stop names after departure
+	IsExpress      bool     `json:"isExpress"`
+	StopID         string   `json:"stopId"`
+	DepartureNano  int64    `json:"departureNano"` // nanoseconds from midnight of service day
+	ServiceDay     string   `json:"serviceDay"`    // "YYYY-MM-DD"
+}
+
+// ScheduleForStop returns pre-filtered departure candidates for a stop code,
+// doing all filtering (last stop, service active, time window) in-memory.
+func (s *StaticStore) ScheduleForStop(code string, now time.Time, lookAhead time.Duration) []ScheduleCandidate {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	stopIDs := s.stopCodes[code]
+	if len(stopIDs) == 0 {
+		return nil
+	}
+
+	today := truncateDay(now)
+	yesterday := today.Add(-24 * time.Hour)
+
+	stopIDSet := make(map[string]bool, len(stopIDs))
+	for _, id := range stopIDs {
+		stopIDSet[id] = true
+	}
+
+	type rawCandidate struct {
+		dep        ScheduledDeparture
+		stopID     string
+		serviceDay time.Time
+		adjusted   time.Time
+	}
+
+	var candidates []rawCandidate
+
+	for _, stopID := range stopIDs {
+		deps := s.stopIndex[stopID]
+		for i := range deps {
+			dep := &deps[i]
+
+			// Skip trips where this stop is the final stop.
+			trip, ok := s.tripIndex[dep.TripID]
+			if !ok || len(trip.Stops) == 0 {
+				continue
+			}
+			if stopIDSet[trip.Stops[len(trip.Stops)-1].StopID] {
+				continue
+			}
+
+			for _, serviceDay := range []time.Time{today, yesterday} {
+				svc, ok := s.services[dep.ServiceID]
+				if !ok || !serviceActive(&svc, serviceDay) {
+					continue
+				}
+
+				scheduled := serviceDay.Add(time.Duration(dep.DepartureTime))
+				if scheduled.Before(now) || scheduled.After(now.Add(lookAhead)) {
+					continue
+				}
+
+				candidates = append(candidates, rawCandidate{*dep, stopID, serviceDay, scheduled})
+				break
+			}
+		}
+	}
+
+	// Sort by scheduled time.
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].adjusted.Before(candidates[j].adjusted)
+	})
+
+	// Deduplicate.
+	seenTrip := make(map[string]bool)
+	seenTimeLine := make(map[string]bool)
+	const maxResults = 20
+	result := make([]ScheduleCandidate, 0, maxResults)
+
+	for i := range candidates {
+		c := &candidates[i]
+		tripNum := extractTripNum(c.dep.TripID)
+		if seenTrip[tripNum] {
+			continue
+		}
+		seenTrip[tripNum] = true
+
+		timeLineKey := fmtTime(c.serviceDay.Add(time.Duration(c.dep.DepartureTime))) + "|" + c.dep.RouteID + "|" + c.stopID
+		if seenTimeLine[timeLineKey] {
+			continue
+		}
+		seenTimeLine[timeLineKey] = true
+
+		route := s.routes[c.dep.RouteID]
+		trip := s.tripIndex[c.dep.TripID]
+
+		// Remaining stop names.
+		var stops []string
+		found := false
+		for _, ts := range trip.Stops {
+			if !found {
+				if stopIDSet[ts.StopID] {
+					found = true
+				}
+				continue
+			}
+			if name := s.stopNames[ts.StopID]; name != "" {
+				stops = append(stops, name)
+			}
+		}
+
+		// Platform from stop name.
+		platform := extractPlat(s.stopNames[c.stopID])
+
+		// Express detection.
+		isExpress := false
+		if len(trip.Stops) >= 2 {
+			key := trip.RouteID + "|" + trip.Stops[0].StopID + "|" + trip.Stops[len(trip.Stops)-1].StopID
+			if max := s.maxRouteStops[key]; max > 0 && len(trip.Stops) < max {
+				isExpress = true
+			}
+		}
+
+		result = append(result, ScheduleCandidate{
+			TripID:         c.dep.TripID,
+			TripNumber:     tripNum,
+			RouteShortName: route.ShortName,
+			RouteLongName:  route.LongName,
+			RouteColor:     route.Color,
+			RouteType:      route.Type,
+			Headsign:       c.dep.Headsign,
+			ScheduledTime:  fmtTime(c.serviceDay.Add(time.Duration(c.dep.DepartureTime))),
+			Platform:       platform,
+			Stops:          stops,
+			IsExpress:      isExpress,
+			StopID:         c.stopID,
+			DepartureNano:  c.dep.DepartureTime,
+			ServiceDay:     c.serviceDay.Format("2006-01-02"),
+		})
+
+		if len(result) >= maxResults {
+			break
+		}
+	}
+
+	return result
+}
+
+func truncateDay(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
+}
+
+func fmtTime(t time.Time) string {
+	return fmt.Sprintf("%02d:%02d", t.Hour(), t.Minute())
+}
+
+func extractTripNum(tripID string) string {
+	if idx := strings.LastIndex(tripID, "-"); idx >= 0 && idx+1 < len(tripID) {
+		return tripID[idx+1:]
+	}
+	return tripID
+}
+
+func extractPlat(stopName string) string {
+	const prefix = "Platform "
+	if idx := strings.LastIndex(stopName, prefix); idx >= 0 {
+		return stopName[idx+len(prefix):]
+	}
+	return ""
 }
 
 // ArrivalTimeAtStop returns the scheduled arrival duration-from-midnight for a trip
