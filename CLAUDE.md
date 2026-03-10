@@ -15,9 +15,17 @@ Monorepo with 5 independently deployed microservices + shared module, connected 
 - **`services/realtime-poller/`** — Unified poller: 5 Metrolinx feeds every 30s → Redis + NATS (no HTTP)
 - **`services/departures-api/`** — Departure queries, NextService/Fares on-demand, alerts, network health (port 8082)
 - **`services/sse-push/`** — NATS → SSE streams to browsers (port 8085)
-- **`services/web/`** — SvelteKit frontend. All API calls proxied through SvelteKit server routes — no backend services are publicly exposed
+- **`services/web/`** — SvelteKit frontend, proxies all API/SSE traffic to internal services
 
-Data flow: Browser → SvelteKit → departures-api/gtfs-static → Redis/Metrolinx
+### Proxy Architecture
+
+No backend services are publicly exposed. All traffic flows through SvelteKit server routes:
+
+- Browser fetches `/api/*` (same-origin) → SvelteKit `+server.ts` routes → `proxyFetch()` → departures-api
+- Browser fetches `/api/sse` → SvelteKit proxies to sse-push service
+- SSR `+page.server.ts` loads → `api.ts` functions → gtfs-static (stops) or departures-api (alerts, departures)
+
+**Important:** Go backend routes have **no `/api/` prefix** (e.g., `/departures/{stopCode}`, `/alerts`). The `/api/` prefix exists only in the SvelteKit routing layer. Proxy paths in `+server.ts` files must NOT include `/api/`.
 
 ## Commands
 
@@ -53,6 +61,7 @@ npm run lint                      # prettier --check + eslint
 npm run format                    # auto-format with prettier
 npm run build                     # production build
 npx vitest run                    # run all tests
+npx vitest run src/lib/display    # run a single test file
 ```
 
 ## Service Details
@@ -98,6 +107,7 @@ Subscribes to 5 NATS subjects, broadcasts to connected SSE clients. Event names:
 - `GET /api/alerts` — active service alerts
 - `GET /api/network-health` — active trains per GO line
 - `GET /api/fares/{from}/{to}` — fare info between two stations
+- `GET /api/sse` — SSE stream (proxied to sse-push)
 - `GET /health` — web health check
 
 ## Web Structure
@@ -107,9 +117,9 @@ Two pages:
 - `/departures` — standalone split-flap departure board. Defaults to Union Station, with station picker dropdown. Auto-scales font to viewport for TV/kiosk display.
 
 Key files:
-- `src/lib/api.ts` — server-only API functions (uses `$env/dynamic/private`)
+- `src/lib/api.ts` — server-only API functions (uses `$env/dynamic/private`). Uses `API_BASE_URL` for departures-api, `GTFS_STATIC_ADDR` for gtfs-static
 - `src/lib/api-client.ts` — browser-side fetch wrappers (same-origin, proxied through SvelteKit server routes)
-- `src/lib/server/proxy.ts` — server-side proxy helper for forwarding API requests to internal services
+- `src/lib/server/proxy.ts` — `proxyFetch()` helper: forwards requests to `API_BASE_URL`, `getSseUrl()` for SSE
 - `src/lib/sse.ts` — SSE client for real-time alerts and union departures
 - `src/routes/+page.server.ts` — loads stops and alerts server-side
 - `src/routes/+page.svelte` — renders MyCommute (commute dashboard)
@@ -150,19 +160,20 @@ Key components:
 | `METROLINX_API_KEY` | — | Metrolinx OpenData API key (required for real-time) |
 | `METROLINX_BASE_URL` | `https://api.openmetrolinx.com/...` | Metrolinx API base |
 | `GTFS_STATIC_URL` | Metrolinx default | URL to GTFS static ZIP |
-| `GTFS_STATIC_ADDR` | `http://localhost:8081` | GTFS static service address |
-| `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS allowed origins (for sse-push) |
+| `GTFS_STATIC_ADDR` | `http://localhost:8081` | GTFS static service address (used by departures-api) |
 
 ### Web
-| Variable | Description |
-|---|---|
-| `API_BASE_URL` | Departures API URL for SSR (e.g. `http://localhost:8082`) |
-| `PUBLIC_MAPBOX_TOKEN` | Mapbox GL access token |
+| Variable | Default | Description |
+|---|---|---|
+| `API_BASE_URL` | `http://localhost:8082` (dev) | Departures API URL for SSR and proxy |
+| `GTFS_STATIC_ADDR` | `http://localhost:8081` (dev) | GTFS static service URL for SSR (stops) |
+| `SSE_PUSH_URL` | `http://localhost:8085` (dev) | SSE push service URL for proxy |
+| `PUBLIC_MAPBOX_TOKEN` | — | Mapbox GL access token |
 
 ## Deploy
 
-Railway with Railpack builder. Each service has its own `railway.toml` and watches only its directory + shared.
+Railway with Railpack builder. Each service has its own `railway.toml` with `watchPatterns` scoped to its directory + `services/shared/**`, enabling independent deployments.
 
-CI: GitHub Actions in `.github/workflows/` — one workflow per service, triggered by path-filtered pushes/PRs.
+CI: GitHub Actions in `.github/workflows/` — `api.yml` (all Go services vet + test) and `web.yml` (test, check+lint, build), triggered by path-filtered pushes/PRs.
 
 Local dev: `docker compose up` for full stack, or run individual services with `go run .`.
