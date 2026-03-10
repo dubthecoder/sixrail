@@ -427,7 +427,7 @@
 					</span>
 
 					<span class="col-status {statusClass(dep)}">
-						{#each padRight(statusText(dep), 7).split('') as char, j}
+						{#each padCenter(statusText(dep), 7).split('') as char, j}
 							<SplitFlapChar value={char} delay={60 + j * 10} />
 						{/each}
 					</span>
