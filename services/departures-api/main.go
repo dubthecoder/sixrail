@@ -198,18 +198,15 @@ func handleDepartures(sc *StaticClient, rc *RedisClient, mx *metrolinx.Client) h
 				nsCancel()
 			}
 			if nsLines != nil {
-				byLine := make(map[string][]models.NextServiceLine, len(nsLines))
-				for _, l := range nsLines {
-					byLine[l.LineCode] = append(byLine[l.LineCode], l)
+				byTrip := make(map[string]*models.NextServiceLine, len(nsLines))
+				for i := range nsLines {
+					byTrip[nsLines[i].TripNumber] = &nsLines[i]
 				}
 				for i := range departures {
-					candidates := byLine[departures[i].Line]
-					ns, idx := bestNSMatch(departures[i].ScheduledTime, candidates)
+					ns := byTrip[departures[i].TripNumber]
 					if ns == nil {
 						continue
 					}
-					// Remove matched candidate so it can't be reused
-					byLine[departures[i].Line] = append(candidates[:idx], candidates[idx+1:]...)
 					if ns.ActualPlatform != "" {
 						departures[i].Platform = ns.ActualPlatform
 					} else if ns.Platform != "" && departures[i].Platform == "" {
@@ -264,36 +261,6 @@ func handleDepartures(sc *StaticClient, rc *RedisClient, mx *metrolinx.Client) h
 		}
 		respondJSON(w, slim)
 	}
-}
-
-// bestNSMatch returns the NextServiceLine whose ComputedTime is closest to
-// the given "HH:MM" scheduled time within a 10-minute window, plus its index.
-func bestNSMatch(scheduledHHMM string, candidates []models.NextServiceLine) (*models.NextServiceLine, int) {
-	sched, err := time.Parse("15:04", scheduledHHMM)
-	if err != nil {
-		return nil, -1
-	}
-	const window = 10 * time.Minute
-	bestIdx := -1
-	var bestDiff time.Duration
-	for i := range candidates {
-		comp, err := time.Parse("15:04", candidates[i].ComputedTime)
-		if err != nil {
-			continue
-		}
-		diff := comp.Sub(sched)
-		if diff < 0 {
-			diff = -diff
-		}
-		if diff <= window && (bestIdx < 0 || diff < bestDiff) {
-			bestDiff = diff
-			bestIdx = i
-		}
-	}
-	if bestIdx < 0 {
-		return nil, -1
-	}
-	return &candidates[bestIdx], bestIdx
 }
 
 func handleUnionDepartures(rc *RedisClient) http.HandlerFunc {

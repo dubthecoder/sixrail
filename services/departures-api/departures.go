@@ -74,6 +74,7 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 			Stops:         c.Stops,
 			IsExpress:     c.IsExpress,
 			RouteType:     c.RouteType,
+			TripNumber:    c.TripNumber,
 		}
 		if delayMin > 0 {
 			dep.ActualTime = formatTime(adjusted)
