@@ -133,10 +133,10 @@
 	<CommuteSetup {stops} {buildInfo} />
 {:else}
 	<div
-		class="my-commute bg-surface h-[calc(100dvh-60px)] text-white font-mono p-4 flex flex-col gap-4 max-w-xl mx-auto overflow-hidden"
+		class="my-commute bg-surface h-[calc(100dvh-60px)] text-white font-mono p-4 flex flex-col gap-3 max-w-xl mx-auto overflow-hidden"
 	>
 		<!-- Header -->
-		<div class="flex items-start justify-between pt-2">
+		<div class="flex items-start justify-between pt-2 shrink-0">
 			<div>
 				<h1 class="text-amber-400 font-bold text-base uppercase tracking-widest">Rail Six</h1>
 				<p class="text-gray-500 text-xs mt-0.5">{greeting()} &middot; {dateStr()}</p>
@@ -151,7 +151,7 @@
 		</div>
 
 		<!-- Direction toggle -->
-		<div class="flex rounded overflow-hidden border border-border">
+		<div class="flex rounded overflow-hidden border border-border shrink-0">
 			<button
 				class="flex-1 py-2 text-xs uppercase tracking-wider transition-colors"
 				class:bg-amber-400={activeDirection === 'toWork'}
@@ -205,7 +205,7 @@
 
 		<!-- Countdown -->
 		{#if nextDeparture}
-			<div class="flex flex-col items-center mt-2 gap-1">
+			<div class="flex flex-col items-center gap-1 shrink-0">
 				<CountdownTimer
 					scheduledTime={departureDisplayTime(nextDeparture)}
 					originalScheduledTime={departureDisplayTime(nextDeparture) !== nextDeparture.scheduledTime
@@ -235,12 +235,12 @@
 			</div>
 		{/if}
 
-		<footer class="mt-auto pt-2 pb-4 text-center max-w-sm mx-auto">
+		<footer class="mt-auto pt-2 pb-2 text-center max-w-sm mx-auto shrink-0">
 			<p class="text-gray-500 text-[9px] font-mono leading-relaxed">
 				Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
 				Always confirm with official sources before travelling.
 			</p>
-			<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-3">
+			<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-1.5">
 				<a href="mailto:hello@railsix.com" class="hover:text-gray-400 transition-colors"
 					>hello@railsix.com</a
 				>
@@ -252,7 +252,7 @@
 					class="hover:text-gray-400 transition-colors">Teclara Technologies Inc.</a
 				>
 			</p>
-			<div class="mt-3 flex justify-center">
+			<div class="mt-1.5 flex justify-center">
 				<BuildStamp {buildInfo} />
 			</div>
 		</footer>

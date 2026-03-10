@@ -57,7 +57,7 @@
 		border: 1px solid var(--color-alert-border);
 		border-radius: 6px;
 		overflow: hidden;
-		margin-bottom: 12px;
+		margin-bottom: 0;
 	}
 
 	.banner-bar {

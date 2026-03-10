@@ -113,7 +113,8 @@
 		background: var(--color-surface);
 		border-radius: 8px;
 		padding: 16px;
-		width: fit-content;
+		width: 100%;
+		max-width: fit-content;
 		margin: 0 auto;
 		overflow: hidden;
 	}

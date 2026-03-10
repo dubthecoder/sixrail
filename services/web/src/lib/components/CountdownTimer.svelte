@@ -60,7 +60,7 @@
 		border-radius: 8px;
 		padding: 12px 24px;
 		min-width: 160px;
-		min-height: 90px;
+		min-height: auto;
 		justify-content: center;
 	}
 
