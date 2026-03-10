@@ -371,7 +371,7 @@
 		<span class="col-time text-amber-400">TIME</span>
 		<span class="col-line text-white">LINE</span>
 		<span class="col-cars text-gray-400">CRS</span>
-		<span class="col-plat text-white">PLT</span>
+		<span class="col-plat text-white">PLAT</span>
 		<span class="col-status text-gray-400">STATUS</span>
 	</div>
 

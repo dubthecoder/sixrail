@@ -64,6 +64,10 @@ npx vitest run                    # run all tests
 npx vitest run src/lib/display    # run a single test file
 ```
 
+## Metrolinx API Reference
+
+Full API docs: https://api.openmetrolinx.com/OpenDataAPI/Help/Index/en
+
 ## Service Details
 
 ### Shared Module (`services/shared/`)

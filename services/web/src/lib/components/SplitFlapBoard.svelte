@@ -51,7 +51,7 @@
 		<span class="col-time text-amber-400">TIME</span>
 		<span class="col-route text-white">LINE</span>
 		<span class="col-cars text-gray-400">CRS</span>
-		<span class="col-platform text-white">PLT</span>
+		<span class="col-platform text-white">PLAT</span>
 		<span class="col-arrival text-amber-300">ARRV</span>
 		<span class="col-status text-gray-400">STATUS</span>
 	</div>
