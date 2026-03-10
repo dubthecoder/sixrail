@@ -1,12 +1,12 @@
 services:
-  nats:
+  message-bus:
     image: nats:2-alpine
     ports:
       - "4222:4222"
       - "8222:8222"
     command: ["--js"]
 
-  redis:
+  cache:
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -25,10 +25,10 @@ services:
     build:
       context: services
       dockerfile: realtime-poller/Dockerfile
-    depends_on: [nats, redis, gtfs-static]
+    depends_on: [message-bus, cache, gtfs-static]
     environment:
-      NATS_URL: nats://nats:4222
-      REDIS_ADDR: redis:6379
+      NATS_URL: nats://message-bus:4222
+      REDIS_ADDR: cache:6379
       METROLINX_API_KEY: ${METROLINX_API_KEY}
       GTFS_STATIC_ADDR: http://gtfs-static:8081
 
@@ -38,10 +38,10 @@ services:
       dockerfile: departures-api/Dockerfile
     ports:
       - "8082:8082"
-    depends_on: [redis, gtfs-static]
+    depends_on: [cache, gtfs-static]
     environment:
       PORT: "8082"
-      REDIS_ADDR: redis:6379
+      REDIS_ADDR: cache:6379
       GTFS_STATIC_ADDR: http://gtfs-static:8081
       METROLINX_API_KEY: ${METROLINX_API_KEY}
 
@@ -51,8 +51,8 @@ services:
       dockerfile: sse-push/Dockerfile
     ports:
       - "8085:8085"
-    depends_on: [nats]
+    depends_on: [message-bus]
     environment:
       PORT: "8085"
-      NATS_URL: nats://nats:4222
+      NATS_URL: nats://message-bus:4222
 

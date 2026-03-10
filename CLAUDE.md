@@ -8,7 +8,7 @@ Rail Six — GO Transit real-time tracking. Two views: commute dashboard with co
 
 ## Architecture
 
-Monorepo with 5 independently deployed microservices + shared module, connected via NATS message bus and Redis shared cache:
+Monorepo with 5 independently deployed microservices + shared module, connected via NATS message bus (`message-bus`) and Redis cache (`cache`):
 
 - **`services/shared/`** — Go module: models, NATS/Redis helpers, Metrolinx client, config, GTFS-RT parsers
 - **`services/gtfs-static/`** — GTFS ZIP loader (24h refresh), schedule queries via HTTP (port 8081)
@@ -49,7 +49,7 @@ cd services/realtime-poller && go run .  # no HTTP, polls + publishes
 ### Docker (full local stack)
 ```bash
 docker compose up                 # all services + NATS + Redis
-docker compose up nats redis      # just infrastructure
+docker compose up message-bus cache  # just infrastructure
 ```
 
 ### Web (SvelteKit)
@@ -154,8 +154,8 @@ Key components:
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | varies | Server port (8081 static, 8082 departures, 8085 sse) |
-| `NATS_URL` | `nats://localhost:4222` | NATS server address |
-| `REDIS_ADDR` | `localhost:6379` | Redis server address |
+| `NATS_URL` | `nats://localhost:4222` | Message bus address (NATS) |
+| `REDIS_ADDR` | `localhost:6379` | Cache address (Redis) |
 | `REDIS_PASSWORD` | — | Redis password |
 | `METROLINX_API_KEY` | — | Metrolinx OpenData API key (required for real-time) |
 | `METROLINX_BASE_URL` | `https://api.openmetrolinx.com/...` | Metrolinx API base |
