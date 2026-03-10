@@ -5,4 +5,5 @@ use (
 	./gtfs-static
 	./sse-push
 	./realtime-poller
+	./departures-api
 )
