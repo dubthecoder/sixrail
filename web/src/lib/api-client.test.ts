@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Mock $env/dynamic/public before importing api-client
+vi.mock('$env/dynamic/public', () => ({
+	env: { PUBLIC_API_URL: 'http://test-api:8080' }
+}));
+
 import {
 	ApiError,
 	fetchAlerts,
@@ -8,6 +13,8 @@ import {
 	fetchNetworkHealth,
 	fetchUnionDepartures
 } from './api-client';
+
+const BASE = 'http://test-api:8080';
 
 describe('api client helpers', () => {
 	let fetchMock: ReturnType<typeof vi.fn>;
@@ -32,7 +39,7 @@ describe('api client helpers', () => {
 		);
 
 		await expect(fetchAlerts()).resolves.toEqual(alerts);
-		expect(fetchMock).toHaveBeenCalledWith('/api/alerts', expect.any(Object));
+		expect(fetchMock).toHaveBeenCalledWith(`${BASE}/api/alerts`, expect.any(Object));
 	});
 
 	it('builds departures URLs with optional encoded destination codes', async () => {
@@ -46,7 +53,7 @@ describe('api client helpers', () => {
 		await fetchDepartures('UN', 'KI B');
 
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/departures/UN?dest=KI%20B');
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(`${BASE}/api/departures/UN?dest=KI%20B`);
 	});
 
 	it('throws ApiError when departures fail', async () => {
@@ -66,7 +73,7 @@ describe('api client helpers', () => {
 
 		await fetchFares('UN', 'BR&GO');
 
-		expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/fares/UN/BR%26GO');
+		expect(fetchMock.mock.calls[0]?.[0]).toBe(`${BASE}/api/fares/UN/BR%26GO`);
 	});
 
 	it('throws ApiError for union departures and network health on non-ok responses', async () => {
