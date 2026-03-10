@@ -8,22 +8,44 @@ Rail Six — GO Transit real-time tracking. Two views: commute dashboard with co
 
 ## Architecture
 
-Monorepo with two independently deployed services:
+Monorepo with 6 independently deployed microservices + shared module, connected via NATS message bus and Redis shared cache:
 
-- **`api/`** — Go API server. Single gateway to Metrolinx OpenData API. Downloads GTFS static data at startup (refreshes every 24h), polls multiple real-time feeds in background goroutines.
-- **`web/`** — SvelteKit frontend. Server-side `+page.server.ts` loads initial data from Go API. Client-side polling via SvelteKit API proxy routes (`/api/*` → Go API).
+- **`services/shared/`** — Go module: models, NATS/Redis helpers, Metrolinx client, config, GTFS-RT parsers
+- **`services/gtfs-static/`** — GTFS ZIP loader (24h refresh), schedule queries via HTTP (port 8081)
+- **`services/realtime-poller/`** — Unified poller: 5 Metrolinx feeds every 30s → Redis + NATS (no HTTP)
+- **`services/departures-api/`** — Departure queries, NextService/Fares on-demand, alerts, network health (port 8082)
+- **`services/api-gateway/`** — Thin routing layer, CORS, health aggregation, proxies to all services (port 8080)
+- **`services/sse-push/`** — NATS → SSE streams to browsers (port 8085)
+- **`web/`** — SvelteKit frontend. SSR loads initial data from API gateway. Browser-side fetches go directly to API gateway (CORS enabled)
 
-Data flow: Browser → SvelteKit SSR/proxy routes → Go API → Metrolinx OpenData API
+Data flow: Browser → API Gateway → departures-api/gtfs-static → Redis/Metrolinx
+
+Legacy monolith in `api/` is deprecated — see `api/DEPRECATED.md`.
 
 ## Commands
 
-### API (Go)
+### Services (Go workspace)
 ```bash
-cd api
-go run ./cmd/server/              # start dev server (port 8080)
-go test ./... -v                  # run all tests
-go test ./internal/gtfs/ -v       # run gtfs package tests
-go vet ./...                      # static analysis
+cd services
+go vet ./shared/...              # vet shared module
+go vet ./gtfs-static/...         # vet a specific service
+go test ./... -v -short           # run all service tests (skip integration)
+go test ./departures-api/... -v   # test a specific service
+```
+
+### Individual Service (dev mode)
+```bash
+cd services/gtfs-static && go run .      # port 8081
+cd services/departures-api && go run .   # port 8082
+cd services/api-gateway && go run .      # port 8080
+cd services/sse-push && go run .         # port 8085
+cd services/realtime-poller && go run .  # no HTTP, polls + publishes
+```
+
+### Docker (full local stack)
+```bash
+docker compose up                 # all services + NATS + Redis
+docker compose up nats redis      # just infrastructure
 ```
 
 ### Web (SvelteKit)
@@ -34,96 +56,125 @@ npm run check                     # svelte-kit sync + svelte-check (TypeScript)
 npm run lint                      # prettier --check + eslint
 npm run format                    # auto-format with prettier
 npm run build                     # production build
+npx vitest run                    # run all tests
 ```
 
-## Go API Structure
+## Service Details
 
-Entry point: `api/cmd/server/main.go` — sets up GTFS stores, pollers, routes, middleware (CORS).
+### Shared Module (`services/shared/`)
+- `models/` — Stop, Route, Departure, NextServiceLine, UnionDeparture, NetworkLine, FareInfo, ServiceGlanceEntry, Alert
+- `bus/` — NATS Connect, Publish, Subscribe helpers
+- `cache/` — Redis helpers: SetJSON, GetJSON, SetHashJSON, GetHashFieldJSON, GetHashAllJSON, SetMembers, IsMember, SetTimestamp, GetAge
+- `config/` — EnvOr, Require, env var constants and defaults
+- `metrolinx/` — HTTP client and response parsers (NextService, ServiceGlance, UnionDepartures, Exceptions, Fares)
+- `gtfsrt/` — GTFS-RT protobuf parsers (ParseAlerts, ParseTripUpdates, EnrichAlerts)
 
-Internal packages under `api/internal/`:
-- `config/` — env var loading (`METROLINX_API_KEY`, `GTFS_STATIC_URL`, `PORT`, `ALLOWED_ORIGINS`)
-- `models/` — shared data structs (`Stop`, `Route`, `VehiclePosition`, `Alert`, `Departure`, `ServiceGlanceEntry`, `FareInfo`, `NetworkLine`)
-- `metrolinx/` — HTTP client for Metrolinx API (10s timeout, 10MB body limit)
-- `metrolinx/responses.go` — Metrolinx-specific response parsers (NextService, ServiceGlance, UnionDepartures, Fares)
-- `gtfs/static.go` — GTFS ZIP parser + thread-safe store. Indexes trips, stop_times, and calendar for O(1) departure lookups. Refreshes every 24h.
-- `gtfs/realtime.go` — GTFS-RT protobuf parser, `RealtimeCache` (positions, alerts, trip updates, occupancy, service glance, union departures), background pollers
-- `gtfs/departures.go` — departure query logic: merges GTFS static schedule with real-time trip updates, handles service calendar, timezone, and past-midnight trips
-- `handlers/` — HTTP handlers with dependency injection. Stop code validated via `^[A-Za-z0-9]{2,10}$`
+### GTFS Static (`services/gtfs-static/`)
+HTTP API exposing schedule data: stops, routes, departures, trip info, service calendar queries. Downloads and indexes GTFS ZIP at startup (refreshes every 24h).
 
-### API Routes
-- `GET /api/health` — health check
+### Realtime Poller (`services/realtime-poller/`)
+Unified poller: fetches all 5 Metrolinx feeds every 30s (exceptions every 60s), writes to Redis hashes/sets/JSON, publishes to NATS subjects.
+
+### Departures API (`services/departures-api/`)
+Most complex service — merges GTFS static schedule with real-time data from Redis. Handles NextService (on-demand, 30s cache), Fares (on-demand, 1h cache), Union departures enrichment, alerts, network health.
+
+### API Gateway (`services/api-gateway/`)
+Thin proxy — routes `/api/*` to gtfs-static and departures-api. Handles CORS. Health endpoint aggregates staleness from Redis timestamps.
+
+### SSE Push (`services/sse-push/`)
+Subscribes to 5 NATS subjects, broadcasts to connected SSE clients. Event names: alerts, trip-updates, service-glance, exceptions, union-departures.
+
+### Redis Keys
+| Key | Type | TTL | Writer | Readers |
+|-----|------|-----|--------|---------|
+| `transit:alerts` | JSON string | 5m | realtime-poller | api-gateway, departures-api |
+| `transit:trip-updates` | Hash (tripID → JSON) | 5m | realtime-poller | departures-api |
+| `transit:service-glance` | Hash (tripNum → JSON) | 5m | realtime-poller | departures-api, api-gateway |
+| `transit:exceptions` | Set (tripNumbers) | 5m | realtime-poller | departures-api |
+| `transit:union-departures` | JSON string | 5m | realtime-poller | departures-api, api-gateway |
+| `transit:next-service:{stopCode}` | JSON string | 30s | departures-api | departures-api |
+| `transit:fares:{from}:{to}` | JSON string | 1h | departures-api | departures-api |
+| `transit:*:updated-at` | String (unix ts) | 5m | realtime-poller | api-gateway (health) |
+
+### NATS Subjects
+`transit.alerts`, `transit.trip-updates`, `transit.service-glance`, `transit.exceptions`, `transit.union-departures`
+
+### API Routes (via gateway)
+- `GET /api/health` — aggregated health check
+- `GET /api/ready` — gtfs-static readiness
 - `GET /api/stops` — all GO Transit stops
 - `GET /api/departures/{stopCode}` — departures for a station (optional `?dest=` filter)
-- `GET /api/union-departures` — Union Station departures (polled from Metrolinx every 30s)
+- `GET /api/union-departures` — Union Station departures
 - `GET /api/alerts` — active service alerts
 - `GET /api/network-health` — active trains per GO line
-- `GET /api/fares/{from}/{to}` — fare info between two stations (1h cache)
-
-### Background Pollers
-Started in `main.go` when `METROLINX_API_KEY` is configured:
-- **AlertPoller** (30s) — GTFS-RT alerts, enriched with route names from static data
-- **TripUpdatePoller** (30s) — GTFS-RT trip updates for delays/cancellations
-- **ServiceGlancePoller** (30s) — Metrolinx ServiceGlance API for cars count, isInMotion, lat/lon
-- **ExceptionsPoller** (60s) — Metrolinx service exceptions (cancelled trips)
-- **UnionDeparturesPoller** (30s) — Metrolinx Union Station departure board
-
-### Middleware
-- **CORS** — allows configured origins, GET + OPTIONS methods
+- `GET /api/fares/{from}/{to}` — fare info between two stations
+- `GET /api/sse` — SSE stream for real-time updates
 
 ## Web Structure
 
 Two pages:
 - `/` — commute dashboard with countdown timer, network health, fares, and alerts for saved commute routes
-- `/board` — standalone split-flap departure board. Defaults to Union Station, with station picker dropdown. Auto-scales font to viewport for TV/kiosk display.
+- `/departures` — standalone split-flap departure board. Defaults to Union Station, with station picker dropdown. Auto-scales font to viewport for TV/kiosk display.
 
 Key files:
 - `src/lib/api.ts` — server-only API functions (uses `$env/dynamic/private`)
-- `src/lib/api-client.ts` — browser-side fetch wrappers and TypeScript types (`Departure`, `UnionDeparture`, `FareInfo`, `NetworkLine`)
-- `src/routes/api/*/+server.ts` — SvelteKit proxy endpoints forwarding to Go API
+- `src/lib/api-client.ts` — browser-side fetch wrappers using `PUBLIC_API_URL` env var
+- `src/lib/sse.ts` — SSE client for real-time alerts and union departures
 - `src/routes/+page.server.ts` — loads stops and alerts server-side
-- `src/routes/+page.svelte` — renders CommuteDashboard
-- `src/routes/board/+page.svelte` — split-flap departure board page
-- `src/lib/stores/favorites.ts` — localStorage-backed writable stores (`favorites`, `defaultStation`)
+- `src/routes/+page.svelte` — renders MyCommute (commute dashboard)
+- `src/routes/departures/+page.svelte` — split-flap departure board page
+- `src/routes/health/+server.ts` — web health check (decoupled from API)
+- `src/lib/stores/commute.ts` — localStorage-backed commute route store
+- `src/lib/display.ts` — time formatting, countdown, status text/color helpers
 
 Key components:
 - `SplitFlapChar` — single CSS flip-animation character tile (keep usage count low to avoid animation lag)
 - `SplitFlapBoard` — commute dashboard board using SplitFlapChar
-- `CommuteDashboard` — commute tracking with countdown timer
+- `MyCommute` — commute dashboard with direction toggle, countdown timer, alerts
 
 ## Key Conventions
 
-- Go: stdlib `net/http`, `slog` for logging, no external frameworks. Only external dep is `jamespfennell/gtfs` for protobuf parsing
+- Go: stdlib `net/http`, `slog` for logging, no external frameworks. Go workspace (`go.work`) in `services/`
+- External Go deps: `jamespfennell/gtfs` (protobuf), `redis/go-redis`, `nats-io/nats.go`
 - Frontend: SvelteKit 2 with Svelte 5 runes (`$state`, `$derived`, `$effect`, `$props`). No class components
 - Svelte 5: `{@const}` must be a direct child of block tags (`{#each}`, `{#if}`, etc.), not nested inside `<div>` or other elements
-- Styling: Tailwind CSS 4 via `@tailwindcss/vite` plugin
+- Styling: Tailwind CSS 4 via `@tailwindcss/vite` plugin. All palette colors overridden with hex in `app.css` `@theme` block — Tailwind 4 outputs `oklch()` by default which TV browsers (TCL/Google TV) don't support
 - Formatting: Prettier with tabs, single quotes, 100 char width. Run `npm run format` before committing
 - No user auth — localStorage for favorites and default station
 - Input validation on path params (regex) to prevent traversal
-- SplitFlapChar causes CSS animation lag when used for many characters (80+). Use plain text for variable-length content like meta-lines.
+- SplitFlapChar causes CSS animation lag when used for many characters (80+). Use plain text for variable-length content like meta-lines
 - Metrolinx ServiceGlance returns `"-"` for cars when no data — filter this on the frontend
-- npm overrides for transitive deps can break SvelteKit SSR silently (e.g., cookie 0.7 breaks `@sveltejs/kit` which requires cookie ^0.6.0)
+- `api-client.ts` fetch functions throw `ApiError` on non-ok responses — callers must handle errors
+- Departures board fullscreen detection uses both Fullscreen API and viewport-vs-screen comparison for TV browsers
 
 ## Environment Variables
 
-### API
+### Services (common)
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `8080` | Server port |
+| `PORT` | varies | Server port (8080 gateway, 8081 static, 8082 departures, 8085 sse) |
+| `NATS_URL` | `nats://localhost:4222` | NATS server address |
+| `REDIS_ADDR` | `localhost:6379` | Redis server address |
+| `REDIS_PASSWORD` | — | Redis password |
 | `METROLINX_API_KEY` | — | Metrolinx OpenData API key (required for real-time) |
+| `METROLINX_BASE_URL` | `https://api.openmetrolinx.com/...` | Metrolinx API base |
 | `GTFS_STATIC_URL` | Metrolinx default | URL to GTFS static ZIP |
+| `GTFS_STATIC_ADDR` | `http://localhost:8081` | GTFS static service address |
+| `DEPARTURES_ADDR` | `http://localhost:8082` | Departures API service address |
+| `SSE_PUSH_ADDR` | `http://localhost:8085` | SSE push service address |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CORS allowed origins (comma-separated) |
 
 ### Web
 | Variable | Description |
 |---|---|
-| `API_BASE_URL` | Go API base URL (must include `http://` and port, e.g. `http://localhost:8080`) |
+| `API_BASE_URL` | API gateway URL for SSR (e.g. `http://localhost:8080`) |
+| `PUBLIC_API_URL` | API gateway URL for browser-side fetches |
 | `PUBLIC_MAPBOX_TOKEN` | Mapbox GL access token |
 
 ## Deploy
 
-Railway with Railpack builder. Each service has its own `railway.toml` and watches only its directory.
-- API: builds Go binary named `out`, health check at `/api/health`
-- Web: `node build/index.js` (Node adapter), health check at `/`
-- Internal networking: web connects to API via `http://railsix-api.railway.internal:8080` (must include protocol + port)
+Railway with Railpack builder. Each service has its own `railway.toml` and watches only its directory + shared.
 
-CI: GitHub Actions in `.github/workflows/` — `api.yml` (Go test+vet) and `web.yml` (check+lint+build), triggered by path-filtered pushes/PRs.
+CI: GitHub Actions in `.github/workflows/` — one workflow per service, triggered by path-filtered pushes/PRs.
+
+Local dev: `docker compose up` for full stack, or run individual services with `go run .`.
