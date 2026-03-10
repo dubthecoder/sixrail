@@ -1,0 +1,44 @@
+name: GTFS Static
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/gtfs-static/**
+      - services/shared/**
+      - .github/workflows/gtfs-static.yml
+  pull_request:
+    paths:
+      - services/gtfs-static/**
+      - services/shared/**
+      - .github/workflows/gtfs-static.yml
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: services
+
+jobs:
+  vet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.8"
+          cache-dependency-path: services/go.work.sum
+
+      - run: go vet ./gtfs-static/...
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.8"
+          cache-dependency-path: services/go.work.sum
+
+      - run: go test ./gtfs-static/... -v -race -short

@@ -1,0 +1,44 @@
+name: Departures API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/departures-api/**
+      - services/shared/**
+      - .github/workflows/departures-api.yml
+  pull_request:
+    paths:
+      - services/departures-api/**
+      - services/shared/**
+      - .github/workflows/departures-api.yml
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: services
+
+jobs:
+  vet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.8"
+          cache-dependency-path: services/go.work.sum
+
+      - run: go vet ./departures-api/...
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.8"
+          cache-dependency-path: services/go.work.sum
+
+      - run: go test ./departures-api/... -v -race -short

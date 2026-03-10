@@ -1,17 +1,17 @@
-name: Services
+name: Realtime Poller
 
 on:
   push:
     branches: [main]
     paths:
-      - services/**
-      - "!services/web/**"
-      - .github/workflows/api.yml
+      - services/realtime-poller/**
+      - services/shared/**
+      - .github/workflows/realtime-poller.yml
   pull_request:
     paths:
-      - services/**
-      - "!services/web/**"
-      - .github/workflows/api.yml
+      - services/realtime-poller/**
+      - services/shared/**
+      - .github/workflows/realtime-poller.yml
   workflow_dispatch:
 
 defaults:
@@ -29,7 +29,7 @@ jobs:
           go-version: "1.25.8"
           cache-dependency-path: services/go.work.sum
 
-      - run: go vet ./...
+      - run: go vet ./realtime-poller/...
 
   test:
     runs-on: ubuntu-latest
@@ -41,4 +41,4 @@ jobs:
           go-version: "1.25.8"
           cache-dependency-path: services/go.work.sum
 
-      - run: go test ./... -v -race -short
+      - run: go test ./realtime-poller/... -v -race -short

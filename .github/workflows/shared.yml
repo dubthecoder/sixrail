@@ -1,0 +1,42 @@
+name: Shared
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/shared/**
+      - .github/workflows/shared.yml
+  pull_request:
+    paths:
+      - services/shared/**
+      - .github/workflows/shared.yml
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: services
+
+jobs:
+  vet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.8"
+          cache-dependency-path: services/go.work.sum
+
+      - run: go vet ./shared/...
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.8"
+          cache-dependency-path: services/go.work.sum
+
+      - run: go test ./shared/... -v -race -short
