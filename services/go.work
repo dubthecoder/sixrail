@@ -6,4 +6,5 @@ use (
 	./sse-push
 	./realtime-poller
 	./departures-api
+	./api-gateway
 )

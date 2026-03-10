@@ -17,6 +17,7 @@ const (
 	EnvGTFSStaticURL   = "GTFS_STATIC_URL"
 	EnvGTFSStaticAddr  = "GTFS_STATIC_ADDR"
 	EnvDeparturesAddr  = "DEPARTURES_ADDR"
+	EnvSSEPushAddr     = "SSE_PUSH_ADDR"
 )
 
 // Default values for environment variables.
@@ -27,6 +28,7 @@ const (
 	DefaultGTFSStaticURL  = "https://assets.metrolinx.com/raw/upload/Documents/Metrolinx/Open%20Data/GO-GTFS.zip"
 	DefaultGTFSStaticAddr = "http://localhost:8081"
 	DefaultDeparturesAddr = "http://localhost:8082"
+	DefaultSSEPushAddr    = "http://localhost:8085"
 )
 
 // EnvOr returns the value of the environment variable named by key,
