@@ -2,8 +2,9 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { track } from '$lib/track';
+	import { connectSSE, disconnectSSE } from '$lib/sse';
 	let { children } = $props();
 	let path = $derived($page.url.pathname);
 
@@ -103,6 +104,12 @@
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/sw.js');
 		}
+
+		connectSSE('/api/sse');
+	});
+
+	onDestroy(() => {
+		disconnectSSE();
 	});
 </script>
 

@@ -7,7 +7,8 @@
 	import type { Alert } from '$lib/api';
 	import type { Departure } from '$lib/api-client';
 	import type { BuildInfo } from '$lib/build-info';
-	import { fetchDepartures, fetchAlerts } from '$lib/api-client';
+	import { fetchDepartures } from '$lib/api-client';
+	import { onSSE } from '$lib/sse';
 	import { departureDisplayTime, isUpcomingDeparture, torontoHour, torontoNow } from '$lib/display';
 	import { track } from '$lib/track';
 	import { untrack } from 'svelte';
@@ -79,32 +80,26 @@
 		}
 	}
 
-	async function loadAlerts() {
-		try {
-			alerts = await fetchAlerts();
-		} catch (err) {
-			console.error('Failed to load alerts:', err);
-		}
-	}
-
 	let departInterval: ReturnType<typeof setInterval>;
-	let alertInterval: ReturnType<typeof setInterval>;
 	let tickInterval: ReturnType<typeof setInterval>;
+	let unsubSSEAlerts: (() => void) | undefined;
 
 	onMount(() => {
 		commute.hydrate();
 		mounted = true;
 		// Departures load is handled by the $effect reacting to activeTrip after hydrate.
-		// Alerts are already loaded via SSR (initialAlerts prop) — skip initial fetch.
 		departInterval = setInterval(loadDepartures, 30_000);
-		alertInterval = setInterval(loadAlerts, 60_000);
 		tickInterval = setInterval(() => (tick += 1), 1000);
+		// Real-time alerts via SSE
+		unsubSSEAlerts = onSSE('alerts', (data) => {
+			if (Array.isArray(data)) alerts = data;
+		});
 	});
 
 	onDestroy(() => {
 		clearInterval(departInterval);
-		clearInterval(alertInterval);
 		clearInterval(tickInterval);
+		unsubSSEAlerts?.();
 		unsubCommute();
 	});
 

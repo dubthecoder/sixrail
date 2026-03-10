@@ -3,11 +3,15 @@ import { dev } from '$app/environment';
 import { error } from '@sveltejs/kit';
 
 function getBaseUrl(): string {
-	const url = env.API_BASE_URL || (dev ? 'http://localhost:8080' : '');
+	const url = env.API_BASE_URL || (dev ? 'http://localhost:8082' : '');
 	if (!url) {
 		throw error(500, 'API_BASE_URL environment variable is required in production');
 	}
 	return url;
+}
+
+export function getSseUrl(): string {
+	return env.SSE_PUSH_URL || (dev ? 'http://localhost:8085' : '');
 }
 
 export async function proxyFetch(path: string): Promise<Response> {
