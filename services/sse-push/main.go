@@ -44,7 +44,7 @@ func main() {
 	// Subscribe to each NATS subject and fan out to the broker.
 	for subject, eventName := range natsToSSE {
 		name := eventName // capture for closure
-		if err := bus.Subscribe(nc, subject, func(data []byte) {
+		if _, err := bus.Subscribe(nc, subject, func(data []byte) {
 			broker.Broadcast(SSEEvent{Name: name, Data: data})
 		}); err != nil {
 			slog.Error("failed to subscribe to NATS subject", "subject", subject, "error", err)
@@ -58,8 +58,9 @@ func main() {
 	mux.HandleFunc("GET /health", healthHandler(broker))
 
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
+		Addr:        ":" + port,
+		Handler:     mux,
+		ReadTimeout: 5 * time.Second,
 	}
 
 	// Graceful shutdown.

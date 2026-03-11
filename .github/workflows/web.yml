@@ -10,13 +10,14 @@ on:
     paths:
       - services/web/**
       - .github/workflows/web.yml
+  workflow_dispatch:
 
 defaults:
   run:
     working-directory: services/web
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -31,34 +32,8 @@ jobs:
 
       - run: npm run test:ci
 
-  check-and-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: services/web/package-lock.json
-
-      - run: npm ci
-
       - run: npm run check
 
       - run: npm run lint
-
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: services/web/package-lock.json
-
-      - run: npm ci
 
       - run: npm run build

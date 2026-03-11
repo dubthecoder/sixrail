@@ -37,9 +37,9 @@ func Publish(nc *nats.Conn, subject string, v any) error {
 }
 
 // Subscribe registers a handler that receives the raw message data for the given subject.
-func Subscribe(nc *nats.Conn, subject string, handler func(data []byte)) error {
-	_, err := nc.Subscribe(subject, func(msg *nats.Msg) {
+// Returns the subscription for cleanup if needed.
+func Subscribe(nc *nats.Conn, subject string, handler func(data []byte)) (*nats.Subscription, error) {
+	return nc.Subscribe(subject, func(msg *nats.Msg) {
 		handler(msg.Data)
 	})
-	return err
 }

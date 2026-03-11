@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import { formatCountdown } from '$lib/display';
 
 	let {
@@ -11,22 +10,15 @@
 	let display = $state('--:--');
 	let originalDisplay = $state('');
 
-	let interval: ReturnType<typeof setInterval> | undefined;
+	function tick() {
+		display = formatCountdown(scheduledTime);
+		originalDisplay = originalScheduledTime ? formatCountdown(originalScheduledTime) : '';
+	}
 
 	$effect(() => {
-		const st = scheduledTime;
-		const ost = originalScheduledTime;
-		display = formatCountdown(st);
-		originalDisplay = ost ? formatCountdown(ost) : '';
-		if (interval) clearInterval(interval);
-		interval = setInterval(() => {
-			display = formatCountdown(st);
-			originalDisplay = ost ? formatCountdown(ost) : '';
-		}, 1000);
-	});
-
-	onDestroy(() => {
-		if (interval) clearInterval(interval);
+		tick();
+		const interval = setInterval(tick, 1000);
+		return () => clearInterval(interval);
 	});
 </script>
 

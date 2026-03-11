@@ -23,7 +23,7 @@ func TestPubSub(t *testing.T) {
 
 	received := make(chan msg, 1)
 
-	err = Subscribe(nc, "test.subject", func(data []byte) {
+	_, err = Subscribe(nc, "test.subject", func(data []byte) {
 		var m msg
 		if err := json.Unmarshal(data, &m); err != nil {
 			t.Errorf("unmarshal: %v", err)

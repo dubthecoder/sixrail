@@ -39,7 +39,7 @@ export function getStopDepartures(stopCode: string, destCode?: string) {
 	const path = destCode
 		? `/departures/${encodeURIComponent(stopCode)}?dest=${encodeURIComponent(destCode)}`
 		: `/departures/${encodeURIComponent(stopCode)}`;
-	return fetchApi(getApiBaseUrl(), path);
+	return fetchApi<unknown[]>(getApiBaseUrl(), path);
 }
 
 export function getAlerts() {
@@ -47,15 +47,15 @@ export function getAlerts() {
 }
 
 export function getUnionDepartures() {
-	return fetchApi(getApiBaseUrl(), '/union-departures');
+	return fetchApi<unknown[]>(getApiBaseUrl(), '/union-departures');
 }
 
 export function getNetworkHealth() {
-	return fetchApi(getApiBaseUrl(), '/network-health');
+	return fetchApi<unknown[]>(getApiBaseUrl(), '/network-health');
 }
 
 export function getFares(fromCode: string, toCode: string) {
-	return fetchApi(
+	return fetchApi<unknown[]>(
 		getApiBaseUrl(),
 		`/fares/${encodeURIComponent(fromCode)}/${encodeURIComponent(toCode)}`
 	);

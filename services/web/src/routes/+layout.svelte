@@ -1,12 +1,12 @@
 <script lang="ts">
 	import '../app.css';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { browser } from '$app/environment';
 	import { onMount, onDestroy } from 'svelte';
 	import { track } from '$lib/track';
 	import { connectSSE, disconnectSSE, onSSEStatus } from '$lib/sse';
 	let { children } = $props();
-	let path = $derived($page.url.pathname);
+	let path = $derived(page.url.pathname);
 
 	// SSE connection status
 	let sseConnected = $state(true);
