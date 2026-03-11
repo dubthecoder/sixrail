@@ -9,11 +9,12 @@
 	import type { Stop } from '$lib/api';
 	import SplitFlapChar from '$lib/components/SplitFlapChar.svelte';
 	import {
-		compactPlatform,
 		departureDisplayTime,
 		departureTargetMs,
+		isWaiting,
 		padRight,
 		padCenter,
+		platformText,
 		statusText,
 		statusClass,
 		torontoNow
@@ -420,8 +421,8 @@
 						{/each}
 					</span>
 
-					<span class="col-plat text-white">
-						{#each padCenter(compactPlatform(dep.platform || '--'), 5).split('') as char, j}
+					<span class="col-plat text-white" class:text-amber-300={isWaiting(dep)}>
+						{#each padCenter(platformText(dep), 5).split('') as char, j}
 							<SplitFlapChar value={char} delay={50 + j * 12} />
 						{/each}
 					</span>

@@ -1,7 +1,13 @@
 <script lang="ts">
 	import SplitFlapChar from './SplitFlapChar.svelte';
 	import type { Departure } from '$lib/api-client';
-	import { padRight, padCenter, compactPlatform, departureDisplayTime } from '$lib/display';
+	import {
+		padRight,
+		padCenter,
+		departureDisplayTime,
+		isWaiting,
+		platformText
+	} from '$lib/display';
 
 	let {
 		departures = [],
@@ -13,15 +19,6 @@
 
 	function formatTime(t: string): string {
 		return t.slice(0, 5);
-	}
-
-	function isWaiting(d: Departure): boolean {
-		return d.status?.toUpperCase() === 'WAIT';
-	}
-
-	function boardPlatformText(d: Departure): string {
-		if (isWaiting(d)) return 'WAIT';
-		return compactPlatform(d.platform || '--');
 	}
 
 	function boardStatusText(d: Departure): string {
@@ -80,7 +77,7 @@
 			</span>
 
 			<span class="col-platform text-white" class:text-amber-300={isWaiting(dep)}>
-				{#each padCenter(boardPlatformText(dep), 5).split('') as char, j}
+				{#each padCenter(platformText(dep), 5).split('') as char, j}
 					<SplitFlapChar value={char} delay={50 + j * 12} />
 				{/each}
 			</span>

@@ -126,19 +126,27 @@ export function padCenter(str: string, len: number): string {
 	return s.padStart(s.length + left, ' ').padEnd(len, ' ');
 }
 
+export function isWaiting(d: Departure): boolean {
+	return d.status?.toUpperCase() === 'WAIT';
+}
+
+export function platformText(d: Departure): string {
+	if (isWaiting(d)) return 'WAIT';
+	return compactPlatform(d.platform || '--');
+}
+
 export function statusText(d: Departure): string {
 	if (d.isCancelled || d.status === 'Cancelled') return 'CANCEL';
-	const s = d.status?.toUpperCase() ?? '';
-	if (s === 'PROCEED' || s === 'WAIT') return s;
 	if (d.delayMinutes && d.delayMinutes > 0) return `DLY +${d.delayMinutes}`;
+	const s = d.status?.toUpperCase() ?? '';
+	if (s === 'PROCEED') return s;
 	return 'ON TIME';
 }
 
 export function statusClass(d: Departure): string {
 	if (d.isCancelled || d.status === 'Cancelled') return 'text-red-500';
+	if (d.delayMinutes && d.delayMinutes > 0) return 'text-amber-400';
 	const s = d.status?.toUpperCase() ?? '';
 	if (s === 'PROCEED') return 'text-green-400';
-	if (s === 'WAIT') return 'text-amber-300';
-	if (d.delayMinutes && d.delayMinutes > 0) return 'text-amber-400';
 	return 'text-green-400';
 }
