@@ -454,7 +454,7 @@
 					</div>
 				{/if}
 				{#if dep.alert}
-					<div class="alert-line text-amber-400">! {dep.alert.toUpperCase()}</div>
+					<div class="alert-line text-red-500">! {dep.alert.toUpperCase()}</div>
 				{/if}
 			</div>
 		{/each}
