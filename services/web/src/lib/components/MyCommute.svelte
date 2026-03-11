@@ -120,10 +120,6 @@
 		prevNext = nextDeparture;
 	});
 
-	function shortName(name: string): string {
-		return name.replace(/\s+(GO|Station|GO Station)$/i, '').trim();
-	}
-
 	// Pass empty array — AlertBanner shows all alerts when no route filter is provided
 	// TODO: store route names in commute trips to enable route-specific filtering
 	let activeRouteNames = $derived<string[]>([]);
@@ -163,9 +159,7 @@
 				}}
 				disabled={!commuteState.toWork}
 			>
-				{commuteState.toWork
-					? `To ${shortName(commuteState.toWork.destinationName)}`
-					: 'To Station'}
+				To Work
 			</button>
 			<button
 				class="flex-1 py-2 text-xs uppercase tracking-wider transition-colors"
@@ -178,7 +172,7 @@
 				}}
 				disabled={!commuteState.toHome}
 			>
-				{commuteState.toHome ? `To ${shortName(commuteState.toHome.destinationName)}` : 'To Union'}
+				To Home
 			</button>
 		</div>
 
