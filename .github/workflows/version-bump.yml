@@ -11,6 +11,9 @@ defaults:
   run:
     working-directory: services/web
 
+permissions:
+  contents: write
+
 jobs:
   bump:
     runs-on: ubuntu-latest
