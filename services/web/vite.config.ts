@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
@@ -31,7 +32,12 @@ export default defineConfig(({ mode }) => {
 		};
 	}
 
+	const appVersion = readFileSync('VERSION', 'utf-8').trim();
+
 	return {
+		define: {
+			__APP_VERSION__: JSON.stringify(appVersion)
+		},
 		plugins: [tailwindcss(), sveltekit()],
 		server: {
 			host: true,

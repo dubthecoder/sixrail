@@ -1,0 +1,32 @@
+name: Version Bump
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - services/web/**
+      - '!services/web/VERSION'
+
+defaults:
+  run:
+    working-directory: services/web
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - run: |
+          CURRENT=$(cat VERSION)
+          NEXT=$((CURRENT + 1))
+          echo "$NEXT" > VERSION
+          git add VERSION
+          git commit -m "chore: bump web version to v${NEXT}"
+          git push

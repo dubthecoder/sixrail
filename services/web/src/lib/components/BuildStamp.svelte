@@ -8,9 +8,10 @@
 	);
 </script>
 
-<div class="build-stamp" {title} aria-label={`Build ${buildInfo.label}`}>
-	<span class="build-label">Build</span>
-	<span class="build-value">{buildInfo.label}</span>
+<div class="build-stamp" {title} aria-label={`v${buildInfo.version} · ${buildInfo.label}`}>
+	<span class="build-value">v{buildInfo.version}</span>
+	<span class="build-sep">&middot;</span>
+	<span class="build-label">{buildInfo.label}</span>
 </div>
 
 <style>
@@ -35,5 +36,9 @@
 
 	.build-value {
 		color: var(--color-amber-400, #fbbf24);
+	}
+
+	.build-sep {
+		color: var(--color-gray-600);
 	}
 </style>
