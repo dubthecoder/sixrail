@@ -22,11 +22,7 @@ export function getBuildInfo(values: Record<string, string | undefined>): BuildI
 
 	return {
 		version,
-		label: shortSha
-			? branch && branch !== 'main'
-				? `${branch}@${shortSha}`
-				: shortSha
-			: 'local',
+		label: shortSha ? (branch && branch !== 'main' ? `${branch}@${shortSha}` : shortSha) : 'local',
 		branch,
 		fullSha,
 		shortSha,
