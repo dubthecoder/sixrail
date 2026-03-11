@@ -17,11 +17,11 @@ import (
 )
 
 // natsToSSE maps NATS subjects to SSE event names.
+// Only subscribe to subjects the browser client actually uses.
+// trip-updates, service-glance, and exceptions are consumed server-side
+// via Redis by departures-api — no need to push them to browsers.
 var natsToSSE = map[string]string{
 	"transit.alerts":           "alerts",
-	"transit.trip-updates":     "trip-updates",
-	"transit.service-glance":   "service-glance",
-	"transit.exceptions":       "exceptions",
 	"transit.union-departures": "union-departures",
 }
 
