@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
@@ -33,7 +33,13 @@ export default defineConfig(({ mode }) => {
 		};
 	}
 
-	const appVersion = readFileSync('VERSION', 'utf-8').trim();
+	let appVersion = '0';
+	try {
+		appVersion = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
+	} catch {
+		// git not available (e.g. Railway build) — fall back to env or default
+		appVersion = process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? '0';
+	}
 
 	return {
 		define: {
