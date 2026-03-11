@@ -251,7 +251,7 @@ func handleDepartures(sc *StaticClient, rc *RedisClient, mx *metrolinx.Client) h
 				IsInMotion:    d.IsInMotion,
 				IsCancelled:   d.IsCancelled,
 				IsExpress:     d.IsExpress,
-				Alert:         alertTexts[strings.ToUpper(d.LineName)],
+				Alert:         alertTexts[strings.ToUpper(d.Line)],
 				RouteType:     d.RouteType,
 			}
 		}
@@ -276,7 +276,7 @@ func handleUnionDepartures(rc *RedisClient) http.HandlerFunc {
 				Info:        d.Info,
 				Stops:       d.Stops,
 				IsCancelled: strings.Contains(strings.ToUpper(d.Info), "CANCEL"),
-				Alert:       alertTexts[strings.ToUpper(d.Service)],
+				Alert:       alertTexts[lineCodeForService[strings.ToUpper(d.Service)]],
 			}
 			if sg, ok := rc.GetServiceGlanceEntry(r.Context(), d.TripNumber); ok {
 				slim[i].Cars = sg.Cars
@@ -377,13 +377,20 @@ func handleAlerts(rc *RedisClient) http.HandlerFunc {
 	}
 }
 
-// routeAlertTexts returns a map of uppercased route name -> alert headline.
+// routeAlertTexts returns a map of uppercased line code -> alert headline.
+// Line codes are extracted from the route_id suffix (e.g. "01260426-ST" → "ST").
+// This avoids collisions between bus and train routes that share a display name
+// (e.g. bus route 71 "Stouffville" vs train route ST "Stouffville").
 func routeAlertTexts(rc *RedisClient, ctx context.Context) map[string]string {
 	alerts := rc.GetAlerts(ctx)
 	m := make(map[string]string)
 	for _, a := range alerts {
-		for _, name := range a.RouteNames {
-			key := strings.ToUpper(name)
+		for _, rid := range a.RouteIDs {
+			code := rid
+			if idx := strings.LastIndex(rid, "-"); idx >= 0 && idx+1 < len(rid) {
+				code = rid[idx+1:]
+			}
+			key := strings.ToUpper(code)
 			if _, exists := m[key]; !exists {
 				m[key] = a.Headline
 			}
@@ -391,6 +398,15 @@ func routeAlertTexts(rc *RedisClient, ctx context.Context) map[string]string {
 	}
 	return m
 }
+
+// lineCodeForService maps uppercased service display names to GO Train line codes.
+var lineCodeForService = func() map[string]string {
+	m := make(map[string]string, len(allLines))
+	for _, l := range allLines {
+		m[strings.ToUpper(l.name)] = strings.ToUpper(l.code)
+	}
+	return m
+}()
 
 // --- JSON helpers ---
 
