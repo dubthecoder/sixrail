@@ -84,7 +84,7 @@
 			</span>
 
 			<span class="col-status {boardStatusClass(dep)}">
-				{#each padRight(boardStatusText(dep), 11).split('') as char, j}
+				{#each padRight(boardStatusText(dep), 9).split('') as char, j}
 					<SplitFlapChar value={char} delay={70 + j * 10} />
 				{/each}
 			</span>
@@ -111,7 +111,7 @@
 
 	.board-row {
 		display: grid;
-		grid-template-columns: 8ch 7ch 5ch 8ch 8ch 9ch;
+		grid-template-columns: 7.5ch 9ch 4.5ch 7.5ch 7.5ch 16ch;
 		gap: 8px;
 		align-items: center;
 		padding: 6px 0;
