@@ -87,27 +87,10 @@ func (s *StaticStore) load(zipData []byte) error {
 		return fmt.Errorf("parsing GTFS static: %w", err)
 	}
 
-	// --- Stops ---
-	stops := make([]models.Stop, 0, len(static.Stops))
+	// --- Stop names (needed by schedule queries regardless of filtering) ---
 	stopNames := make(map[string]string, len(static.Stops))
 	for i := range static.Stops {
-		gs := &static.Stops[i]
-		stopNames[gs.Id] = gs.Name
-		if gs.Latitude == nil || gs.Longitude == nil {
-			continue
-		}
-		// Only include parent stations (location_type=1), not individual
-		// platforms or bus stops.
-		if gs.Type != gtfs.StopType_Station {
-			continue
-		}
-		stops = append(stops, models.Stop{
-			ID:   gs.Id,
-			Code: gs.Code,
-			Name: gs.Name,
-			Lat:  *gs.Latitude,
-			Lon:  *gs.Longitude,
-		})
+		stopNames[static.Stops[i].Id] = static.Stops[i].Name
 	}
 
 	// --- Routes ---
@@ -152,14 +135,17 @@ func (s *StaticStore) load(zipData []byte) error {
 
 	// --- Schedule index + trip index (single pass over trips) ---
 	// Use string interner to deduplicate repeated IDs and headsigns.
+	// Also collect stop IDs served by rail routes for the stops list.
 	intern := newInterner()
 	stopIndex := make(map[string][]ScheduledDeparture)
 	tripIndex := make(map[string]TripInfo, len(static.Trips))
+	railStopIDs := make(map[string]struct{})
 	for i := range static.Trips {
 		trip := &static.Trips[i]
 		if trip.Route == nil || trip.Service == nil {
 			continue
 		}
+		isRail := trip.Route.Type == gtfs.RouteType_Rail
 		headsign := trip.Headsign
 		if headsign == "" {
 			headsign = trip.Route.LongName
@@ -187,6 +173,13 @@ func (s *StaticStore) load(zipData []byte) error {
 				ArrivalTime:   int64(st.ArrivalTime),
 				DepartureTime: int64(st.DepartureTime),
 			})
+			if isRail {
+				railStopIDs[st.Stop.Id] = struct{}{}
+				// Also mark the parent stop so code-based lookups work.
+				if st.Stop.Parent != nil {
+					railStopIDs[st.Stop.Parent.Id] = struct{}{}
+				}
+			}
 		}
 		if len(tripStops) < 2 {
 			continue
@@ -197,6 +190,35 @@ func (s *StaticStore) load(zipData []byte) error {
 			ServiceID: serviceID,
 			Stops:     tripStops,
 		}
+	}
+
+	// --- Stops (only those served by rail routes) ---
+	stops := make([]models.Stop, 0)
+	seen := make(map[string]bool)
+	for i := range static.Stops {
+		gs := &static.Stops[i]
+		if gs.Latitude == nil || gs.Longitude == nil {
+			continue
+		}
+		if _, ok := railStopIDs[gs.Id]; !ok {
+			continue
+		}
+		// Deduplicate by stop code (parent + platforms share a code).
+		key := gs.Code
+		if key == "" {
+			key = gs.Id
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		stops = append(stops, models.Stop{
+			ID:   gs.Id,
+			Code: gs.Code,
+			Name: gs.Name,
+			Lat:  *gs.Latitude,
+			Lon:  *gs.Longitude,
+		})
 	}
 
 	// --- Max stop count per route+endpoint pair (for express detection) ---
