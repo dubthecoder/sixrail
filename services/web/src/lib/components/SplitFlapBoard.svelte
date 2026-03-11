@@ -144,27 +144,16 @@
 		overflow: hidden;
 	}
 
-	.col-time {
-		font-size: 1.1em;
-	}
-	.col-route {
-		font-size: 1em;
-	}
 	.col-cars {
-		font-size: 0.9em;
 		justify-content: center;
 	}
 	.col-platform {
-		font-size: 1em;
 		justify-content: center;
 	}
 	.col-arrival {
-		font-size: 1em;
 		justify-content: center;
 	}
 	.col-status {
-		font-size: 0.95em;
-		letter-spacing: 0.05em;
 		justify-content: center;
 	}
 
