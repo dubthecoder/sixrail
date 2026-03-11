@@ -10,9 +10,9 @@ export class ApiError extends Error {
 	}
 }
 
-export async function fetchAlerts(): Promise<Alert[]> {
+export async function fetchAlerts(signal?: AbortSignal): Promise<Alert[]> {
 	const res = await fetch('/api/alerts', {
-		signal: AbortSignal.timeout(10000)
+		signal: signal ?? AbortSignal.timeout(10000)
 	});
 	if (!res.ok) throw new ApiError(res.status, `alerts: ${res.status}`);
 	return res.json();

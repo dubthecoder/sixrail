@@ -588,6 +588,11 @@
 		justify-content: flex-end;
 	}
 
+	.col-headers .col-plat,
+	.col-headers .col-status {
+		justify-content: center;
+	}
+
 	.departure-row {
 		padding: 0.45em 0;
 	}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Alert } from '$lib/api';
+	import { alertKey } from '$lib/alerts';
 
 	let {
 		alerts = [],
@@ -38,7 +39,7 @@
 
 		{#if expanded}
 			<div class="banner-details">
-				{#each relevant as alert}
+				{#each relevant as alert (alertKey(alert))}
 					<div class="alert-item">
 						<p class="font-mono text-xs text-amber-200">{alert.headline}</p>
 						{#if alert.description}

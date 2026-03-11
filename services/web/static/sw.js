@@ -34,6 +34,11 @@ self.addEventListener('fetch', (event) => {
 	// Let search engine crawlers fetch these directly
 	if (url.pathname === '/sitemap.xml' || url.pathname === '/robots.txt') return;
 
+	// Let EventSource connect to the network directly. Routing SSE through the
+	// service worker adds an extra streaming hop and makes transient failures
+	// look like hard app errors.
+	if (url.pathname === '/api/sse') return;
+
 	// API requests: network-only (no caching)
 	if (url.pathname.startsWith('/api/')) {
 		event.respondWith(

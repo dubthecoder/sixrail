@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { commute, getActiveDirection } from '$lib/stores/commute';
 	import type { CommuteStore } from '$lib/stores/commute';
@@ -7,8 +7,9 @@
 	import type { Alert } from '$lib/api';
 	import type { Departure } from '$lib/api-client';
 	import type { BuildInfo } from '$lib/build-info';
-	import { fetchDepartures } from '$lib/api-client';
-	import { onSSE } from '$lib/sse';
+	import { fetchAlerts, fetchDepartures } from '$lib/api-client';
+	import { normalizeAlerts } from '$lib/alerts';
+	import { onSSE, onSSEStatus } from '$lib/sse';
 	import { departureDisplayTime, isUpcomingDeparture, torontoHour, torontoNow } from '$lib/display';
 	import { track } from '$lib/track';
 	import { untrack } from 'svelte';
@@ -33,9 +34,10 @@
 	let activeTrip = $derived.by(() =>
 		activeDirection === 'toWork' ? commuteState.toWork : commuteState.toHome
 	);
+	const ALERT_REFRESH_INTERVAL_MS = 30_000;
 
 	let departures = $state<Departure[]>([]);
-	let alerts = $state<Alert[]>(untrack(() => initialAlerts));
+	let alerts = $state<Alert[]>(normalizeAlerts(untrack(() => initialAlerts)));
 	let showSettings = $state(false);
 	let fetchError = $state(false);
 
@@ -80,27 +82,76 @@
 		}
 	}
 
+	let alertRefreshController = $state<AbortController | null>(null);
+	function replaceAlerts(next: unknown) {
+		alerts = normalizeAlerts(next);
+	}
+
+	function applyRealtimeAlerts(next: unknown) {
+		alertRefreshController?.abort();
+		replaceAlerts(next);
+	}
+
+	async function loadAlerts() {
+		alertRefreshController?.abort();
+		const controller = new AbortController();
+		alertRefreshController = controller;
+
+		try {
+			const nextAlerts = await fetchAlerts(controller.signal);
+			if (controller.signal.aborted || alertRefreshController !== controller) return;
+			replaceAlerts(nextAlerts);
+		} catch (err) {
+			if (controller.signal.aborted) return;
+			console.error('Failed to refresh alerts:', err);
+		} finally {
+			if (alertRefreshController === controller) {
+				alertRefreshController = null;
+			}
+		}
+	}
+
 	let departInterval: ReturnType<typeof setInterval>;
+	let alertInterval: ReturnType<typeof setInterval>;
 	let tickInterval: ReturnType<typeof setInterval>;
 	let unsubSSEAlerts: (() => void) | undefined;
+	let unsubSSEStatus: (() => void) | undefined;
 
 	onMount(() => {
+		function refreshAlertsOnResume() {
+			if (document.visibilityState !== 'hidden') {
+				void loadAlerts();
+			}
+		}
+
 		commute.hydrate();
 		mounted = true;
 		// Departures load is handled by the $effect reacting to activeTrip after hydrate.
 		departInterval = setInterval(loadDepartures, 30_000);
+		alertInterval = setInterval(() => void loadAlerts(), ALERT_REFRESH_INTERVAL_MS);
 		tickInterval = setInterval(() => (tick += 1), 1000);
+		void loadAlerts();
+		window.addEventListener('focus', refreshAlertsOnResume);
+		document.addEventListener('visibilitychange', refreshAlertsOnResume);
 		// Real-time alerts via SSE
 		unsubSSEAlerts = onSSE('alerts', (data) => {
-			if (Array.isArray(data)) alerts = data;
+			applyRealtimeAlerts(data);
 		});
-	});
+		unsubSSEStatus = onSSEStatus((connected) => {
+			if (connected) void loadAlerts();
+		});
 
-	onDestroy(() => {
-		clearInterval(departInterval);
-		clearInterval(tickInterval);
-		unsubSSEAlerts?.();
-		unsubCommute();
+		return () => {
+			clearInterval(departInterval);
+			clearInterval(alertInterval);
+			clearInterval(tickInterval);
+			alertRefreshController?.abort();
+			window.removeEventListener('focus', refreshAlertsOnResume);
+			document.removeEventListener('visibilitychange', refreshAlertsOnResume);
+			unsubSSEAlerts?.();
+			unsubSSEStatus?.();
+			unsubCommute();
+		};
 	});
 
 	let mounted = $state(false);

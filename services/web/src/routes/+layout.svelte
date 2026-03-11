@@ -2,7 +2,7 @@
 	import '../app.css';
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { track } from '$lib/track';
 	import { connectSSE, disconnectSSE, onSSEStatus } from '$lib/sse';
 	let { children } = $props();
@@ -10,6 +10,8 @@
 
 	// SSE connection status
 	let sseConnected = $state(true);
+	let showSSEBanner = $state(false);
+	const SSE_BANNER_DELAY_MS = 5000;
 
 	// Install prompt
 	let deferredPrompt = $state<any>(null);
@@ -81,6 +83,44 @@
 
 	onMount(() => {
 		if (!browser) return;
+		let sseBannerTimeout: ReturnType<typeof setTimeout> | null = null;
+
+		function clearSSEBannerTimeout() {
+			if (sseBannerTimeout) {
+				clearTimeout(sseBannerTimeout);
+				sseBannerTimeout = null;
+			}
+		}
+
+		function handleSSEStatus(connected: boolean) {
+			sseConnected = connected;
+			if (connected) {
+				clearSSEBannerTimeout();
+				showSSEBanner = false;
+				return;
+			}
+
+			if (document.visibilityState === 'hidden' || sseBannerTimeout) return;
+
+			sseBannerTimeout = setTimeout(() => {
+				if (!sseConnected && document.visibilityState !== 'hidden') {
+					showSSEBanner = true;
+				}
+				sseBannerTimeout = null;
+			}, SSE_BANNER_DELAY_MS);
+		}
+
+		function handleVisibilityChange() {
+			if (document.visibilityState === 'hidden') {
+				clearSSEBannerTimeout();
+				showSSEBanner = false;
+				return;
+			}
+
+			if (!sseConnected) {
+				handleSSEStatus(false);
+			}
+		}
 
 		// Install prompt logic
 		if (!isStandalone()) {
@@ -109,11 +149,15 @@
 		}
 
 		connectSSE('/api/sse');
-		onSSEStatus((connected) => (sseConnected = connected));
-	});
+		const removeSSEStatusListener = onSSEStatus(handleSSEStatus);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
 
-	onDestroy(() => {
-		disconnectSSE();
+		return () => {
+			clearSSEBannerTimeout();
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			removeSSEStatusListener();
+			disconnectSSE();
+		};
 	});
 </script>
 
@@ -131,7 +175,7 @@
 	{@html '<script type="application/ld+json">' + breadcrumbJsonLd + '<' + '/script>'}
 </svelte:head>
 
-{#if !sseConnected}
+{#if showSSEBanner}
 	<div class="sse-banner" role="status" aria-live="polite">
 		<span class="font-mono text-xs text-amber-400">LIVE DATA RECONNECTING...</span>
 	</div>

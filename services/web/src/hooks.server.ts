@@ -42,7 +42,9 @@ function isAllowedBrowserApiRequest(event: Parameters<Handle>[0]['event']): bool
 		return false;
 	}
 
-	return true;
+	// Require at least one browser-supplied provenance signal so direct
+	// header-less requests from non-browser clients do not pass through.
+	return Boolean(origin || referer || fetchSite);
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
