@@ -3,8 +3,6 @@
 	import type { Departure } from '$lib/api-client';
 	import { padRight, padCenter, compactPlatform, departureDisplayTime } from '$lib/display';
 
-	import { onMount } from 'svelte';
-
 	let {
 		departures = [],
 		maxRows = 3
@@ -12,14 +10,6 @@
 		departures: Departure[];
 		maxRows?: number;
 	} = $props();
-
-	let isMobile = $state(false);
-
-	onMount(() => {
-		const mq = window.matchMedia('(max-width: 480px)');
-		isMobile = mq.matches;
-		mq.addEventListener('change', (e) => (isMobile = e.matches));
-	});
 
 	function formatTime(t: string): string {
 		return t.slice(0, 5);
