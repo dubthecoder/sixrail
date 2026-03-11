@@ -8,10 +8,8 @@
 	);
 </script>
 
-<div class="build-stamp" {title} aria-label={`v${buildInfo.version} · ${buildInfo.label}`}>
-	<span class="build-value">v{buildInfo.version}</span>
-	<span class="build-sep">&middot;</span>
-	<span class="build-label">{buildInfo.label}</span>
+<div class="build-stamp" {title} aria-label={`v${buildInfo.shortSha ?? buildInfo.version}`}>
+	<span class="build-value">v{buildInfo.shortSha ?? buildInfo.version}</span>
 </div>
 
 <style>
@@ -30,15 +28,7 @@
 		text-transform: lowercase;
 	}
 
-	.build-label {
-		color: var(--color-gray-600);
-	}
-
 	.build-value {
 		color: var(--color-amber-400, #fbbf24);
-	}
-
-	.build-sep {
-		color: var(--color-gray-600);
 	}
 </style>
