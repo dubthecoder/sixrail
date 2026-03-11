@@ -122,9 +122,6 @@
 
 	<link rel="canonical" href="https://railsix.com{path}" />
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html '<script defer src="https://umami.teclara.cloud/script.js" data-website-id="6272cae6-97eb-42a9-bf71-f3b1f2a094f2"><' +
-		'/script>'}
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html '<script type="application/ld+json">' + webAppJsonLd + '<' + '/script>'}
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html '<script type="application/ld+json">' + breadcrumbJsonLd + '<' + '/script>'}
