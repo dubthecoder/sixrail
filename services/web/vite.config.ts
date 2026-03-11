@@ -5,6 +5,18 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
 
+function getAppVersion() {
+	try {
+		const repoRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
+		return execSync('git rev-list --count HEAD -- services/web', {
+			cwd: repoRoot,
+			encoding: 'utf-8'
+		}).trim();
+	} catch {
+		return '0';
+	}
+}
+
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, '.', '');
 	const devPort = Number(env.VITE_DEV_PORT || env.PORT || 5173);
@@ -33,12 +45,7 @@ export default defineConfig(({ mode }) => {
 		};
 	}
 
-	let appVersion: string;
-	try {
-		appVersion = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
-	} catch {
-		appVersion = '0';
-	}
+	const appVersion = getAppVersion();
 
 	return {
 		define: {

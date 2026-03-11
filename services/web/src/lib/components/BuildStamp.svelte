@@ -4,12 +4,14 @@
 	let { buildInfo }: { buildInfo: BuildInfo } = $props();
 
 	const title = $derived(
-		buildInfo.fullSha ? `Git commit ${buildInfo.fullSha}` : 'Local development build'
+		buildInfo.fullSha
+			? `Build v${buildInfo.version} from commit ${buildInfo.fullSha}`
+			: `Local development build v${buildInfo.version}`
 	);
 </script>
 
-<div class="build-stamp" {title} aria-label={`v${buildInfo.shortSha ?? buildInfo.version}`}>
-	<span class="build-value">v{buildInfo.shortSha ?? buildInfo.version}</span>
+<div class="build-stamp" {title} aria-label={`v${buildInfo.version}`}>
+	<span class="build-value">v{buildInfo.version}</span>
 </div>
 
 <style>
