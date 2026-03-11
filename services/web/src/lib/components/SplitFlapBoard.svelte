@@ -70,7 +70,7 @@
 			</span>
 
 			<span class="col-route text-white">
-				{#each padRight(dep.isExpress ? dep.line + ' E' : dep.line, isMobile ? 4 : 6).split('') as char, j}
+				{#each padRight(dep.isExpress ? dep.line + ' EXP' : dep.line, 6).split('') as char, j}
 					<SplitFlapChar value={char} delay={20 + j * 10} />
 				{/each}
 			</span>
@@ -121,7 +121,7 @@
 
 	.board-row {
 		display: grid;
-		grid-template-columns: 8ch 8ch 5ch 8ch 8ch 15ch;
+		grid-template-columns: 8ch 7ch 5ch 8ch 8ch 9ch;
 		gap: 8px;
 		align-items: center;
 		padding: 6px 0;
@@ -170,10 +170,12 @@
 	}
 	.col-arrival {
 		font-size: 1em;
+		justify-content: center;
 	}
 	.col-status {
 		font-size: 0.95em;
 		letter-spacing: 0.05em;
+		justify-content: center;
 	}
 
 	.board-row.cancelled {

@@ -78,6 +78,8 @@
 	.banner-details {
 		border-top: 1px solid var(--color-alert-border-inner);
 		padding: 8px 12px;
+		max-height: 40vh;
+		overflow-y: auto;
 	}
 
 	.alert-item + .alert-item {
