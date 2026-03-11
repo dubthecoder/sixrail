@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { resetLimiterStateForTests } from '$lib/server/rate-limit';
-import { handle } from './hooks.server';
+import { appHandle as handle } from './hooks.server';
 
 function makeEvent(path: string, headers: Record<string, string> = {}) {
 	return {

@@ -13,7 +13,7 @@ const config = {
 				'script-src': ['self', 'https://umami.teclara.cloud'],
 				'style-src': ['self', 'unsafe-inline'],
 				'img-src': ['self', 'data:', 'https:'],
-				'connect-src': ['self', 'https://umami.teclara.cloud'],
+				'connect-src': ['self', 'https://umami.teclara.cloud', 'https://*.ingest.us.sentry.io'],
 				'font-src': ['self'],
 				'worker-src': ['self', 'blob:'],
 				'manifest-src': ['self'],

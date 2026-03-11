@@ -1,6 +1,15 @@
+import * as Sentry from '@sentry/sveltekit';
 import { env } from '$env/dynamic/private';
 import { error, type Handle } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
 import { closeSSE, isRateLimited, openSSE } from '$lib/server/rate-limit';
+
+if (env.SENTRY_DSN) {
+	Sentry.init({
+		dsn: env.SENTRY_DSN,
+		tracesSampleRate: 0.2
+	});
+}
 
 const RATE_LIMIT = 60; // max requests per window
 const SSE_MAX_PER_IP = 3;
@@ -47,7 +56,7 @@ function isAllowedBrowserApiRequest(event: Parameters<Handle>[0]['event']): bool
 	return Boolean(origin || referer || fetchSite);
 }
 
-export const handle: Handle = async ({ event, resolve }) => {
+export const appHandle: Handle = async ({ event, resolve }) => {
 	const { pathname } = event.url;
 
 	if (!pathname.startsWith('/api/')) {
@@ -98,3 +107,6 @@ function addSecurityHeaders(response: Response): Response {
 	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 	return response;
 }
+
+export const handle = sequence(Sentry.sentryHandle(), appHandle);
+export const handleError = Sentry.handleErrorWithSentry();

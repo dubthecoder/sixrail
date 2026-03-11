@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import { sveltekit } from '@sveltejs/kit/vite';
+import { sentrySvelteKit } from '@sentry/sveltekit';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
@@ -33,7 +34,7 @@ export default defineConfig(({ mode }) => {
 	}
 
 	return {
-		plugins: [tailwindcss(), sveltekit()],
+		plugins: [...(mode === 'test' ? [] : [sentrySvelteKit()]), tailwindcss(), sveltekit()],
 		server: {
 			host: true,
 			port: devPort,
