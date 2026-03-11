@@ -50,6 +50,7 @@ type gtfsRTActivePeriod struct {
 
 type gtfsRTInformedEnt struct {
 	RouteID string `json:"route_id"`
+	StopID  string `json:"stop_id"`
 }
 
 type gtfsRTTranslatedStr struct {
@@ -87,6 +88,7 @@ type RawAlert struct {
 	Description string
 	URL         string
 	RouteIDs    []string
+	StopIDs     []string
 	StartTime   int64
 	EndTime     int64
 }

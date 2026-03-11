@@ -136,14 +136,10 @@ func runPollCycle(ctx context.Context, mx *metrolinx.Client, lookup RouteLookup,
 	}
 
 	if result.hasExceptions {
-		members := make([]string, 0, len(result.exceptions))
-		for tripNum := range result.exceptions {
-			members = append(members, tripNum)
-		}
-		if err := cache.SetMembers(ctx, rc, "transit:exceptions", members, cacheTTL); err != nil {
+		if err := cache.SetHashJSON(ctx, rc, "transit:exceptions", result.exceptions, cacheTTL); err != nil {
 			slog.Error("cache exceptions failed", "error", err)
 		}
-		if err := bus.Publish(nc, "transit.exceptions", members); err != nil {
+		if err := bus.Publish(nc, "transit.exceptions", result.exceptions); err != nil {
 			slog.Error("publish exceptions failed", "error", err)
 		}
 		if err := cache.SetTimestamp(ctx, rc, "transit:exceptions:updated-at", cacheTTL); err != nil {

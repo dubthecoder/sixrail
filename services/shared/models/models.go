@@ -64,12 +64,13 @@ type NextServiceLine struct {
 
 // UnionDeparture is a single departure from the Union Station departures board.
 type UnionDeparture struct {
-	TripNumber string   `json:"tripNumber"`
-	Service    string   `json:"service"`
-	Platform   string   `json:"platform"`
-	Time       string   `json:"time"` // "HH:MM"
-	Info       string   `json:"info"` // "Proceed", "Wait", etc.
-	Stops      []string `json:"stops"`
+	TripNumber  string   `json:"tripNumber"`
+	Service     string   `json:"service"`
+	ServiceType string   `json:"serviceType"` // "T" = train, "B" = bus
+	Platform    string   `json:"platform"`
+	Time        string   `json:"time"` // "HH:MM"
+	Info        string   `json:"info"` // "Proceed", "Wait", etc.
+	Stops       []string `json:"stops"`
 }
 
 // NetworkLine represents the count of active trains on a GO Transit line.
@@ -79,23 +80,16 @@ type NetworkLine struct {
 	ActiveTrips int    `json:"activeTrips"`
 }
 
-// FareInfo represents a single fare option between two stations.
-type FareInfo struct {
-	Category   string  `json:"category"`   // e.g. "Adult", "Senior/Youth"
-	TicketType string  `json:"ticketType"` // e.g. "Single Ride", "Day Pass"
-	FareType   string  `json:"fareType"`   // e.g. "PRESTO", "Cash"
-	Amount     float64 `json:"amount"`
-}
-
 // ServiceGlanceEntry holds cached data from the ServiceataGlance/Trains/All endpoint.
 type ServiceGlanceEntry struct {
-	TripNumber string
-	LineCode   string
-	LineName   string // Display field
-	Cars       string
-	Lat        float64
-	Lon        float64
-	IsInMotion bool
+	TripNumber   string
+	LineCode     string
+	LineName     string // Display field
+	Cars         string
+	DelaySeconds int
+	Lat          float64
+	Lon          float64
+	IsInMotion   bool
 }
 
 type Alert struct {
@@ -106,6 +100,7 @@ type Alert struct {
 	URL         string   `json:"url,omitempty"`
 	RouteIDs    []string `json:"routeIds,omitempty"`
 	RouteNames  []string `json:"routeNames,omitempty"`
+	StopIDs     []string `json:"stopIds,omitempty"`
 	StartTime   int64    `json:"startTime,omitempty"`
 	EndTime     int64    `json:"endTime,omitempty"`
 }

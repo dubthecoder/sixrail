@@ -36,11 +36,16 @@ export type Departure = {
 	routeType?: number;
 };
 
+export type DeparturesResult = {
+	stationAlert?: string;
+	departures: Departure[];
+};
+
 export async function fetchDepartures(
 	stopCode: string,
 	destCode?: string,
 	signal?: AbortSignal
-): Promise<Departure[]> {
+): Promise<DeparturesResult> {
 	const url = destCode
 		? `/api/departures/${encodeURIComponent(stopCode)}?dest=${encodeURIComponent(destCode)}`
 		: `/api/departures/${encodeURIComponent(stopCode)}`;
@@ -53,6 +58,7 @@ export async function fetchDepartures(
 
 export type UnionDeparture = {
 	service: string;
+	serviceType?: string;
 	platform: string;
 	time: string;
 	info: string;
@@ -85,16 +91,3 @@ export async function fetchNetworkHealth(): Promise<NetworkLine[]> {
 	return res.json();
 }
 
-export type FareInfo = {
-	category: string;
-	fareType: string;
-	amount: number;
-};
-
-export async function fetchFares(from: string, to: string): Promise<FareInfo[]> {
-	const res = await fetch(`/api/fares/${encodeURIComponent(from)}/${encodeURIComponent(to)}`, {
-		signal: AbortSignal.timeout(10000)
-	});
-	if (!res.ok) throw new ApiError(res.status, `fares: ${res.status}`);
-	return res.json();
-}

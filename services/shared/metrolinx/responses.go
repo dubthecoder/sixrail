@@ -34,12 +34,13 @@ type nextServiceResponse struct {
 type unionDeparturesResponse struct {
 	AllDepartures struct {
 		Trip []struct {
-			TripNumber string `json:"TripNumber"`
-			Service    string `json:"Service"`
-			Platform   string `json:"Platform"`
-			Time       string `json:"Time"`
-			Info       string `json:"Info"`
-			Stops      []struct {
+			TripNumber  string `json:"TripNumber"`
+			Service     string `json:"Service"`
+			ServiceType string `json:"ServiceType"`
+			Platform    string `json:"Platform"`
+			Time        string `json:"Time"`
+			Info        string `json:"Info"`
+			Stops       []struct {
 				Name string `json:"Name"`
 			} `json:"Stops"`
 		} `json:"Trip"`
@@ -97,12 +98,13 @@ func (c *Client) GetUnionDepartures(ctx context.Context) ([]models.UnionDepartur
 		// Extract just the keyword from Info (e.g. "Proceed / Avancez" → "PROCEED")
 		info := strings.ToUpper(strings.TrimSpace(strings.Split(t.Info, "/")[0]))
 		deps = append(deps, models.UnionDeparture{
-			TripNumber: t.TripNumber,
-			Service:    t.Service,
-			Platform:   t.Platform,
-			Time:       parseMetrolinxTime(t.Time),
-			Info:       info,
-			Stops:      stops,
+			TripNumber:  t.TripNumber,
+			Service:     t.Service,
+			ServiceType: t.ServiceType,
+			Platform:    t.Platform,
+			Time:        parseMetrolinxTime(t.Time),
+			Info:        info,
+			Stops:       stops,
 		})
 	}
 	// Sort by time, treating times before 06:00 as next-day for midnight-crossing schedules.
@@ -120,6 +122,7 @@ type serviceGlanceResponse struct {
 			TripNumber          string  `json:"TripNumber"`
 			LineCode            string  `json:"LineCode"`
 			Display             string  `json:"Display"`
+			DelaySeconds        int     `json:"DelaySeconds"`
 			OccupancyPercentage int     `json:"OccupancyPercentage"`
 			Latitude            float64 `json:"Latitude"`
 			Longitude           float64 `json:"Longitude"`
@@ -140,22 +143,6 @@ type exceptionsResponse struct {
 	} `json:"Trip"`
 }
 
-// faresResponse mirrors the Metrolinx Fares JSON structure.
-type faresResponse struct {
-	AllFares struct {
-		FareCategory []struct {
-			Type    string `json:"Type"`
-			Tickets []struct {
-				Type  string `json:"Type"`
-				Fares []struct {
-					Type     string  `json:"Type"`
-					Amount   float64 `json:"Amount"`
-					Category string  `json:"Category"`
-				} `json:"Fares"`
-			} `json:"Tickets"`
-		} `json:"FareCategory"`
-	} `json:"AllFares"`
-}
 
 // GetServiceGlance fetches all in-service train trips with occupancy and car count.
 func (c *Client) GetServiceGlance(ctx context.Context) ([]models.ServiceGlanceEntry, error) {
@@ -171,20 +158,22 @@ func (c *Client) GetServiceGlance(ctx context.Context) ([]models.ServiceGlanceEn
 	entries := make([]models.ServiceGlanceEntry, 0, len(resp.Trips.Trip))
 	for _, t := range resp.Trips.Trip {
 		entries = append(entries, models.ServiceGlanceEntry{
-			TripNumber: t.TripNumber,
-			LineCode:   t.LineCode,
-			LineName:   strings.TrimSpace(t.Display),
-			Cars:       t.Cars,
-			Lat:        t.Latitude,
-			Lon:        t.Longitude,
-			IsInMotion: t.IsInMotion,
+			TripNumber:   t.TripNumber,
+			LineCode:     t.LineCode,
+			LineName:     strings.TrimSpace(t.Display),
+			Cars:         t.Cars,
+			DelaySeconds: t.DelaySeconds,
+			Lat:          t.Latitude,
+			Lon:          t.Longitude,
+			IsInMotion:   t.IsInMotion,
 		})
 	}
 	return entries, nil
 }
 
-// GetExceptions fetches cancelled trips and returns a set of cancelled trip numbers.
-func (c *Client) GetExceptions(ctx context.Context) (map[string]bool, error) {
+// GetExceptions fetches cancelled trips and returns a map of trip number to cancelled stop codes.
+// An empty slice means the whole trip is cancelled; a non-empty slice lists specific cancelled stops.
+func (c *Client) GetExceptions(ctx context.Context) (map[string][]string, error) {
 	data, err := c.Fetch(ctx, "/ServiceUpdate/Exceptions/All")
 	if err != nil {
 		return nil, err
@@ -194,40 +183,23 @@ func (c *Client) GetExceptions(ctx context.Context) (map[string]bool, error) {
 		return nil, fmt.Errorf("parsing Exceptions: %w", err)
 	}
 
-	cancelled := make(map[string]bool)
+	exceptions := make(map[string][]string)
 	for _, t := range resp.Trip {
-		if strings.EqualFold(t.IsCancelled, "true") {
-			cancelled[t.TripNumber] = true
+		if t.IsCancelled == "1" || strings.EqualFold(t.IsCancelled, "true") {
+			exceptions[t.TripNumber] = []string{}
+			continue
 		}
-	}
-	return cancelled, nil
-}
-
-// GetFares fetches fare information between two stations.
-func (c *Client) GetFares(ctx context.Context, fromCode, toCode string) ([]models.FareInfo, error) {
-	data, err := c.Fetch(ctx, fmt.Sprintf("/Fares/%s/%s", fromCode, toCode))
-	if err != nil {
-		return nil, err
-	}
-	var resp faresResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("parsing Fares: %w", err)
-	}
-
-	var fares []models.FareInfo
-	for _, cat := range resp.AllFares.FareCategory {
-		for _, ticket := range cat.Tickets {
-			for _, f := range ticket.Fares {
-				fares = append(fares, models.FareInfo{
-					Category:   cat.Type,
-					TicketType: ticket.Type,
-					FareType:   f.Type,
-					Amount:     f.Amount,
-				})
+		var cancelledStops []string
+		for _, s := range t.Stop {
+			if s.IsCancelled == "1" || strings.EqualFold(s.IsCancelled, "true") {
+				cancelledStops = append(cancelledStops, s.Code)
 			}
 		}
+		if len(cancelledStops) > 0 {
+			exceptions[t.TripNumber] = cancelledStops
+		}
 	}
-	return fares, nil
+	return exceptions, nil
 }
 
 // sortableTime returns a string that sorts correctly across midnight.

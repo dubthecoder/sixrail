@@ -60,13 +60,44 @@ func (r *RedisClient) GetServiceGlanceEntry(ctx context.Context, tripNum string)
 	return entry, true
 }
 
-// IsTripCancelled checks if a trip number is in the exceptions set.
-func (r *RedisClient) IsTripCancelled(ctx context.Context, tripNum string) bool {
-	ok, err := cache.IsMember(ctx, r.rc, keyExceptions, tripNum)
+// getExceptionStops retrieves the cancelled stop codes for a trip number.
+// Returns nil, false if the trip has no exceptions entry.
+// Returns empty slice, true if the whole trip is cancelled.
+// Returns stop codes, true if specific stops are cancelled.
+func (r *RedisClient) getExceptionStops(ctx context.Context, tripNum string) ([]string, bool) {
+	var stops []string
+	err := cache.GetHashFieldJSON(ctx, r.rc, keyExceptions, tripNum, &stops)
 	if err != nil {
+		return nil, false
+	}
+	return stops, true
+}
+
+// IsTripCancelled checks if a whole trip is cancelled (exists with empty stop array).
+func (r *RedisClient) IsTripCancelled(ctx context.Context, tripNum string) bool {
+	stops, ok := r.getExceptionStops(ctx, tripNum)
+	if !ok {
 		return false
 	}
-	return ok
+	return len(stops) == 0
+}
+
+// IsStopCancelled checks if a specific stop is cancelled for a trip.
+// Returns true if the whole trip is cancelled OR the specific stop is in the list.
+func (r *RedisClient) IsStopCancelled(ctx context.Context, tripNum, stopID string) bool {
+	stops, ok := r.getExceptionStops(ctx, tripNum)
+	if !ok {
+		return false
+	}
+	if len(stops) == 0 {
+		return true // whole trip cancelled
+	}
+	for _, s := range stops {
+		if s == stopID {
+			return true
+		}
+	}
+	return false
 }
 
 // GetUnionDepartureByTrip finds a Union departure by trip number.
@@ -136,18 +167,3 @@ func (r *RedisClient) SetNextService(ctx context.Context, stopCode string, lines
 	_ = cache.SetJSON(ctx, r.rc, key, lines, 30*time.Second)
 }
 
-// GetFares retrieves cached fare info between two stations.
-func (r *RedisClient) GetFares(ctx context.Context, from, to string) ([]models.FareInfo, bool) {
-	key := "transit:fares:" + from + ":" + to
-	var fares []models.FareInfo
-	if err := cache.GetJSON(ctx, r.rc, key, &fares); err != nil {
-		return nil, false
-	}
-	return fares, true
-}
-
-// SetFares caches fare info between two stations with 1h TTL.
-func (r *RedisClient) SetFares(ctx context.Context, from, to string, fares []models.FareInfo) {
-	key := "transit:fares:" + from + ":" + to
-	_ = cache.SetJSON(ctx, r.rc, key, fares, time.Hour)
-}

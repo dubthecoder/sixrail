@@ -32,12 +32,17 @@ func ParseAlerts(data []byte) ([]RawAlert, error) {
 			url = englishText(a.URL.Translation)
 		}
 
-		seen := make(map[string]bool)
-		var routeIDs []string
+		seenRoute := make(map[string]bool)
+		seenStop := make(map[string]bool)
+		var routeIDs, stopIDs []string
 		for _, ie := range a.InformedEntity {
-			if ie.RouteID != "" && !seen[ie.RouteID] {
+			if ie.RouteID != "" && !seenRoute[ie.RouteID] {
 				routeIDs = append(routeIDs, ie.RouteID)
-				seen[ie.RouteID] = true
+				seenRoute[ie.RouteID] = true
+			}
+			if ie.StopID != "" && !seenStop[ie.StopID] {
+				stopIDs = append(stopIDs, ie.StopID)
+				seenStop[ie.StopID] = true
 			}
 		}
 
@@ -54,6 +59,7 @@ func ParseAlerts(data []byte) ([]RawAlert, error) {
 			Description: description,
 			URL:         url,
 			RouteIDs:    routeIDs,
+			StopIDs:     stopIDs,
 			StartTime:   startTime,
 			EndTime:     endTime,
 		})
@@ -125,6 +131,7 @@ func EnrichAlerts(raw []RawAlert, lookup RouteLookup) []models.Alert {
 			Description: ra.Description,
 			URL:         ra.URL,
 			RouteIDs:    ra.RouteIDs,
+			StopIDs:     ra.StopIDs,
 			StartTime:   ra.StartTime,
 			EndTime:     ra.EndTime,
 		}

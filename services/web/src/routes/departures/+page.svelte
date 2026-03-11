@@ -4,6 +4,7 @@
 		fetchDepartures,
 		fetchNetworkHealth,
 		type Departure,
+		type DeparturesResult,
 		type NetworkLine
 	} from '$lib/api-client';
 	import type { Stop } from '$lib/api';
@@ -70,6 +71,7 @@
 	}
 
 	let allGtfsDepartures = $state<Departure[]>([]);
+	let stationAlert = $state('');
 	let fetchError = $state(false);
 
 	let trainDepartures = $derived(
@@ -85,9 +87,10 @@
 
 		const stopCode = selectedStation || 'UN';
 		try {
-			const deps = await fetchDepartures(stopCode, undefined, controller.signal);
+			const result = await fetchDepartures(stopCode, undefined, controller.signal);
 			if (controller.signal.aborted) return;
-			allGtfsDepartures = sortByScheduledTime(deps);
+			allGtfsDepartures = sortByScheduledTime(result.departures);
+			stationAlert = result.stationAlert ?? '';
 			fetchError = false;
 		} catch (err) {
 			if (controller.signal.aborted) return;
@@ -375,6 +378,15 @@
 		<span class="col-plat text-white">PLAT</span>
 		<span class="col-status text-gray-400">STATUS</span>
 	</div>
+
+	{#if stationAlert}
+		<div
+			class="text-red-500 text-center py-1 tracking-wider uppercase"
+			style="font-size: 0.55em;"
+		>
+			! {stationAlert.toUpperCase()}
+		</div>
+	{/if}
 
 	{#if fetchError}
 		<div

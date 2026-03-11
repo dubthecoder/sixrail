@@ -29,6 +29,11 @@ type alertResponse struct {
 	RouteNames  []string `json:"routeNames,omitempty"`
 }
 
+type departuresEnvelope struct {
+	StationAlert string              `json:"stationAlert,omitempty"`
+	Departures   []departureResponse `json:"departures"`
+}
+
 type departureResponse struct {
 	Line          string   `json:"line"`
 	LineName      string   `json:"lineName,omitempty"`
@@ -49,6 +54,7 @@ type departureResponse struct {
 
 type unionDepartureResponse struct {
 	Service     string   `json:"service"`
+	ServiceType string   `json:"serviceType,omitempty"`
 	Platform    string   `json:"platform"`
 	Time        string   `json:"time"`
 	Info        string   `json:"info"`
@@ -57,13 +63,6 @@ type unionDepartureResponse struct {
 	IsInMotion  bool     `json:"isInMotion,omitempty"`
 	IsCancelled bool     `json:"isCancelled,omitempty"`
 	Alert       string   `json:"alert,omitempty"`
-}
-
-type fareResponse struct {
-	Category   string  `json:"category"`
-	FareType   string  `json:"fareType"`
-	Amount     float64 `json:"amount"`
-	TicketType string  `json:"ticketType,omitempty"`
 }
 
 // All GO Transit train lines with their codes and display names.
@@ -143,7 +142,6 @@ func registerRoutes(mux *http.ServeMux, sc *StaticClient, rc *RedisClient, mx *m
 	mux.HandleFunc("GET /stops", handleStops(sc))
 	mux.HandleFunc("GET /departures/{stopCode}", handleDepartures(sc, rc, mx))
 	mux.HandleFunc("GET /union-departures", handleUnionDepartures(rc))
-	mux.HandleFunc("GET /fares/{from}/{to}", handleFares(rc, mx))
 	mux.HandleFunc("GET /network-health", handleNetworkHealth(rc))
 	mux.HandleFunc("GET /alerts", handleAlerts(rc))
 }
@@ -233,8 +231,24 @@ func handleDepartures(sc *StaticClient, rc *RedisClient, mx *metrolinx.Client) h
 			}
 		}
 
-		// Return slim response.
+		// Return slim response with station alert envelope.
 		alertTexts := routeAlertTexts(rc, r.Context())
+		stopAlerts := stopAlertTexts(rc, r.Context())
+
+		// Check if the queried station has a stop-specific alert.
+		var stationAlert string
+		if len(stopAlerts) > 0 {
+			stationStopIDs, err := sc.StopIDsForCode(stopCode)
+			if err == nil {
+				for _, sid := range stationStopIDs {
+					if headline, ok := stopAlerts[sid]; ok {
+						stationAlert = headline
+						break
+					}
+				}
+			}
+		}
+
 		slim := make([]departureResponse, len(departures))
 		for i, d := range departures {
 			slim[i] = departureResponse{
@@ -255,7 +269,10 @@ func handleDepartures(sc *StaticClient, rc *RedisClient, mx *metrolinx.Client) h
 				RouteType:     d.RouteType,
 			}
 		}
-		respondJSON(w, slim)
+		respondJSON(w, departuresEnvelope{
+			StationAlert: stationAlert,
+			Departures:   slim,
+		})
 	}
 }
 
@@ -271,6 +288,7 @@ func handleUnionDepartures(rc *RedisClient) http.HandlerFunc {
 		for i, d := range deps {
 			slim[i] = unionDepartureResponse{
 				Service:     d.Service,
+				ServiceType: d.ServiceType,
 				Platform:    d.Platform,
 				Time:        d.Time,
 				Info:        d.Info,
@@ -289,46 +307,6 @@ func handleUnionDepartures(rc *RedisClient) http.HandlerFunc {
 				if update.ScheduleRelationship == "CANCELED" {
 					slim[i].IsCancelled = true
 				}
-			}
-		}
-		respondJSON(w, slim)
-	}
-}
-
-func handleFares(rc *RedisClient, mx *metrolinx.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fromCode := r.PathValue("from")
-		toCode := r.PathValue("to")
-		if !stopCodeRe.MatchString(fromCode) || !stopCodeRe.MatchString(toCode) {
-			jsonError(w, "invalid stop code", http.StatusBadRequest)
-			return
-		}
-		if mx == nil {
-			jsonError(w, "fare data unavailable", http.StatusServiceUnavailable)
-			return
-		}
-
-		var fares []models.FareInfo
-		if cached, ok := rc.GetFares(r.Context(), fromCode, toCode); ok {
-			fares = cached
-		} else {
-			fetched, err := mx.GetFares(r.Context(), fromCode, toCode)
-			if err != nil {
-				slog.Warn("fares fetch failed", "from", fromCode, "to", toCode, "error", err)
-				jsonError(w, "unable to fetch fares", http.StatusBadGateway)
-				return
-			}
-			fares = fetched
-			rc.SetFares(r.Context(), fromCode, toCode, fetched)
-		}
-
-		slim := make([]fareResponse, len(fares))
-		for i, f := range fares {
-			slim[i] = fareResponse{
-				Category:   f.Category,
-				FareType:   f.FareType,
-				Amount:     f.Amount,
-				TicketType: f.TicketType,
 			}
 		}
 		respondJSON(w, slim)
@@ -375,6 +353,20 @@ func handleAlerts(rc *RedisClient) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "public, max-age=30")
 		respondJSON(w, slim)
 	}
+}
+
+// stopAlertTexts returns a map of stop ID -> alert headline for stop-specific alerts.
+func stopAlertTexts(rc *RedisClient, ctx context.Context) map[string]string {
+	alerts := rc.GetAlerts(ctx)
+	m := make(map[string]string)
+	for _, a := range alerts {
+		for _, sid := range a.StopIDs {
+			if _, exists := m[sid]; !exists {
+				m[sid] = a.Headline
+			}
+		}
+	}
+	return m
 }
 
 // routeAlertTexts returns a map of uppercased line code -> alert headline.

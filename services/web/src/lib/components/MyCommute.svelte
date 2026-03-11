@@ -68,7 +68,8 @@
 			return;
 		}
 		try {
-			departures = await fetchDepartures(trip.originCode, trip.destinationCode);
+			const result = await fetchDepartures(trip.originCode, trip.destinationCode);
+			departures = result.departures;
 			fetchError = false;
 		} catch (err) {
 			fetchError = true;

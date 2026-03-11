@@ -107,6 +107,17 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 		if sg, ok := glanceAll[c.TripNumber]; ok {
 			dep.Cars = sg.Cars
 			dep.IsInMotion = sg.IsInMotion
+			// Use ServiceGlance delay as fallback when GTFS-RT has no delay.
+			if delay == 0 && sg.DelaySeconds > 0 {
+				sgDelay := time.Duration(sg.DelaySeconds) * time.Second
+				adjusted = scheduled.Add(sgDelay)
+				delayMin = int(sgDelay.Minutes())
+				dep.DelayMinutes = delayMin
+				if delayMin >= 1 {
+					dep.Status = fmt.Sprintf("Delayed +%dm", delayMin)
+					dep.ActualTime = formatTime(adjusted)
+				}
+			}
 		}
 
 		// Enrich with Union departures board info.
@@ -124,8 +135,8 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 			}
 		}
 
-		// Flag cancelled trips from exceptions cache.
-		if rc.IsTripCancelled(ctx, c.TripNumber) {
+		// Flag cancelled trips/stops from exceptions cache.
+		if rc.IsStopCancelled(ctx, c.TripNumber, c.StopID) {
 			dep.IsCancelled = true
 			dep.Status = "Cancelled"
 		}

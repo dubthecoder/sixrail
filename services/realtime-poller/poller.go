@@ -29,7 +29,7 @@ type PollResult struct {
 	hasTripUpdates     bool
 	serviceGlance      []models.ServiceGlanceEntry
 	hasServiceGlance   bool
-	exceptions         map[string]bool
+	exceptions         map[string][]string
 	hasExceptions      bool
 	unionDepartures    []models.UnionDeparture
 	hasUnionDepartures bool

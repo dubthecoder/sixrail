@@ -4,7 +4,6 @@ import {
 	ApiError,
 	fetchAlerts,
 	fetchDepartures,
-	fetchFares,
 	fetchNetworkHealth,
 	fetchUnionDepartures
 } from './api-client';
@@ -40,7 +39,7 @@ describe('api client helpers', () => {
 
 	it('builds departures URLs with optional encoded destination codes', async () => {
 		fetchMock.mockResolvedValue(
-			new Response(JSON.stringify([]), {
+			new Response(JSON.stringify({ departures: [] }), {
 				status: 200,
 				headers: { 'Content-Type': 'application/json' }
 			})
@@ -57,19 +56,6 @@ describe('api client helpers', () => {
 
 		await expect(fetchDepartures('UN')).rejects.toThrow(ApiError);
 		await expect(fetchDepartures('UN')).rejects.toMatchObject({ status: 502 });
-	});
-
-	it('fetches fares with both path parameters encoded', async () => {
-		fetchMock.mockResolvedValue(
-			new Response(JSON.stringify([{ amount: 4.5 }]), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' }
-			})
-		);
-
-		await fetchFares('UN', 'BR&GO');
-
-		expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/fares/UN/BR%26GO');
 	});
 
 	it('throws ApiError for union departures and network health on non-ok responses', async () => {
