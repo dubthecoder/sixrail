@@ -11,6 +11,8 @@
 	let bottomValue = $state(untrack(() => value));
 
 	const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:+-.';
+	const FLIP_DURATION_MS = 50;
+	const FLIP_SETTLE_MS = 10;
 
 	function getNextChar(current: string): string {
 		const idx = CHARS.indexOf(current.toUpperCase());
@@ -38,7 +40,7 @@
 			steps++;
 			topValue = current;
 			isFlipping = true;
-			await new Promise((r) => setTimeout(r, 25));
+			await new Promise((r) => setTimeout(r, FLIP_DURATION_MS));
 			if (gen !== flipGeneration) {
 				isFlipping = false;
 				return;
@@ -46,7 +48,7 @@
 			isFlipping = false;
 			bottomValue = current;
 			displayValue = current;
-			await new Promise((r) => setTimeout(r, 5));
+			await new Promise((r) => setTimeout(r, FLIP_SETTLE_MS));
 		}
 
 		// Target char not in CHARS — snap directly
@@ -74,7 +76,10 @@
 	});
 </script>
 
-<span class="split-flap-char" style="--flip-delay: {delay}ms">
+<span
+	class="split-flap-char"
+	style="--flip-delay: {delay}ms; --flip-duration: {FLIP_DURATION_MS}ms"
+>
 	<span class="tile top"><span class="char">{topValue}</span></span>
 	<span class="tile bottom"><span class="char">{bottomValue}</span></span>
 	{#if isFlipping}
@@ -117,7 +122,7 @@
 	.tile.flipping {
 		top: 0;
 		height: 100%;
-		animation: flip 50ms linear forwards;
+		animation: flip var(--flip-duration) linear forwards;
 		transform-origin: center;
 		background: var(--color-surface-input);
 		z-index: 2;
