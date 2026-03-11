@@ -234,7 +234,7 @@
 </script>
 
 <svelte:head>
-	<title>{selectedStopName || 'Union Station'} GO Train Departures & Schedule — Rail Six</title>
+	<title>Rail Six — {selectedStopName || 'Union Station'} Departures</title>
 	<meta
 		name="description"
 		content="Live GO Train departure board for {selectedStopName ||

@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>Rail Six — GO Train Schedule & Real-Time Toronto Commute Tracker</title>
+	<title>Rail Six</title>
 	<meta
 		name="description"
 		content="Track your GO Train commute in real time. Live departure times, delays, and platform info for all GO Transit stations across the Greater Toronto Area."
