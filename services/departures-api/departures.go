@@ -118,6 +118,10 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 			if ud.Info != "" {
 				dep.Status = ud.Info
 			}
+			if strings.Contains(ud.Info, "CANCEL") {
+				dep.IsCancelled = true
+				dep.Status = "Cancelled"
+			}
 		}
 
 		// Flag cancelled trips from exceptions cache.
