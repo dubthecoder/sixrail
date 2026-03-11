@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
 		};
 	}
 
-	const appVersion = readFileSync('../../VERSION', 'utf-8').trim();
+	const appVersion = readFileSync('VERSION', 'utf-8').trim();
 
 	return {
 		define: {

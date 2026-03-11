@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - services/web/**
+      - '!services/web/VERSION'
+
+defaults:
+  run:
+    working-directory: services/web
 
 permissions:
   contents: write
@@ -12,6 +17,7 @@ permissions:
 jobs:
   bump:
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'chore: bump web version')"
     steps:
       - uses: actions/checkout@v6
         with:
@@ -26,5 +32,5 @@ jobs:
           NEXT=$((CURRENT + 1))
           echo "$NEXT" > VERSION
           git add VERSION
-          git commit -m "chore: bump web version to v${NEXT}"
+          git commit -m "chore: bump web version to v${NEXT} [skip web]"
           git push
