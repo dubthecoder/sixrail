@@ -88,6 +88,15 @@ func (r *RedisClient) GetAlerts(ctx context.Context) []models.Alert {
 	return alerts
 }
 
+// GetAllServiceGlanceMap returns all service glance entries indexed by trip number.
+func (r *RedisClient) GetAllServiceGlanceMap(ctx context.Context) map[string]models.ServiceGlanceEntry {
+	all, err := cache.GetHashAllJSON[models.ServiceGlanceEntry](ctx, r.rc, keyServiceGlance)
+	if err != nil {
+		return nil
+	}
+	return all
+}
+
 // GetAllServiceGlance returns all service glance entries.
 func (r *RedisClient) GetAllServiceGlance(ctx context.Context) []models.ServiceGlanceEntry {
 	all, err := cache.GetHashAllJSON[models.ServiceGlanceEntry](ctx, r.rc, keyServiceGlance)

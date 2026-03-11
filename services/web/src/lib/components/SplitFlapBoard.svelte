@@ -66,7 +66,7 @@
 			</span>
 
 			<span class="col-cars text-gray-400">
-				{#each padRight(dep.cars ? dep.cars + 'C' : '---', 3).split('') as char, j}
+				{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
 					<SplitFlapChar value={char} delay={40 + j * 15} />
 				{/each}
 			</span>

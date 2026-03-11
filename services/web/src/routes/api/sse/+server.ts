@@ -7,7 +7,9 @@ export const GET: RequestHandler = async () => {
 		return new Response('SSE not configured', { status: 503 });
 	}
 
-	const upstream = await fetch(`${sseUrl}/sse`);
+	const upstream = await fetch(`${sseUrl}/sse`, {
+		signal: AbortSignal.timeout(10000)
+	});
 	if (!upstream.ok || !upstream.body) {
 		return new Response('SSE upstream unavailable', { status: 502 });
 	}

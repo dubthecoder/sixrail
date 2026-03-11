@@ -45,6 +45,7 @@ func GetJSON(ctx context.Context, client *redis.Client, key string, dest any) er
 // an expiration on the key. Uses a pipeline for atomicity.
 func SetHashJSON[V any](ctx context.Context, client *redis.Client, key string, items map[string]V, ttl time.Duration) error {
 	pipe := client.Pipeline()
+	pipe.Del(ctx, key)
 	for field, val := range items {
 		data, err := json.Marshal(val)
 		if err != nil {

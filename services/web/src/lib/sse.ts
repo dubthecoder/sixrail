@@ -9,7 +9,13 @@ export function connectSSE(url: string) {
 
 	for (const event of ['alerts', 'union-departures']) {
 		eventSource.addEventListener(event, (e: MessageEvent) => {
-			const data = JSON.parse(e.data);
+			let data: unknown;
+			try {
+				data = JSON.parse(e.data);
+			} catch {
+				console.warn('SSE: malformed JSON for event', event);
+				return;
+			}
 			for (const handler of handlers.get(event) || []) {
 				handler(data);
 			}

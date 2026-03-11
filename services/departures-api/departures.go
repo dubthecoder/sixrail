@@ -42,6 +42,14 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 		}
 	}
 
+	// Pre-fetch bulk data to avoid N+1 Redis calls per candidate.
+	unionDeps := rc.GetUnionDepartures(ctx)
+	unionByTrip := make(map[string]models.UnionDeparture, len(unionDeps))
+	for _, ud := range unionDeps {
+		unionByTrip[ud.TripNumber] = ud
+	}
+	glanceAll := rc.GetAllServiceGlanceMap(ctx)
+
 	result := make([]models.Departure, 0, len(candidates))
 	for i := range candidates {
 		c := &candidates[i]
@@ -92,13 +100,13 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 		}
 
 		// Enrich with service glance data.
-		if sg, ok := rc.GetServiceGlanceEntry(ctx, c.TripNumber); ok {
+		if sg, ok := glanceAll[c.TripNumber]; ok {
 			dep.Cars = sg.Cars
 			dep.IsInMotion = sg.IsInMotion
 		}
 
 		// Enrich with Union departures board info.
-		if ud, ok := rc.GetUnionDepartureByTrip(ctx, c.TripNumber); ok {
+		if ud, ok := unionByTrip[c.TripNumber]; ok {
 			isUnion := strings.EqualFold(stopCode, "UN")
 			if isUnion && ud.Platform != "" && dep.Platform == "" {
 				dep.Platform = ud.Platform
