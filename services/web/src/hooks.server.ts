@@ -3,7 +3,7 @@ import { error, type Handle } from '@sveltejs/kit';
 import { closeSSE, isRateLimited, openSSE } from '$lib/server/rate-limit';
 
 const RATE_LIMIT = 60; // max requests per window
-const SSE_MAX_PER_IP = 3;
+const SSE_MAX_PER_IP = 5;
 const ALLOWED_FETCH_SITES = new Set(['same-origin', 'same-site', 'none']);
 
 function getClientIp(event: Parameters<Handle>[0]['event']): string {

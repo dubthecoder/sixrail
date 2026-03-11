@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 import { createClient } from 'redis';
 
 const RATE_WINDOW_MS = 60_000;
-const SSE_TTL_SECONDS = 60 * 60;
+const SSE_TTL_SECONDS = 120;
 const API_RATE_PREFIX = 'railsix:web:rate';
 const SSE_RATE_PREFIX = 'railsix:web:sse';
 
