@@ -2,7 +2,6 @@ package gtfsrt
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/teclara/railsix/shared/models"
@@ -105,8 +104,8 @@ func ParseTripUpdates(data []byte) (map[string]RawTripUpdate, error) {
 		updates[tripID] = raw
 		// Also index by trip number (last segment) so lookups work
 		// regardless of which date-prefix the static schedule uses.
-		if idx := strings.LastIndex(tripID, "-"); idx >= 0 && idx+1 < len(tripID) {
-			tripNum := tripID[idx+1:]
+		tripNum := models.ExtractTripNumber(tripID)
+		if tripNum != tripID {
 			if _, exists := updates[tripNum]; !exists {
 				updates[tripNum] = raw
 			}

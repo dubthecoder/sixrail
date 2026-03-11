@@ -464,7 +464,7 @@ func (s *StaticStore) ScheduleForStop(code string, now time.Time, lookAhead time
 
 	for i := range candidates {
 		c := &candidates[i]
-		tripNum := extractTripNum(c.dep.TripID)
+		tripNum := models.ExtractTripNumber(c.dep.TripID)
 		if seenTrip[tripNum] {
 			continue
 		}
@@ -540,12 +540,6 @@ func fmtTime(t time.Time) string {
 	return fmt.Sprintf("%02d:%02d", t.Hour(), t.Minute())
 }
 
-func extractTripNum(tripID string) string {
-	if idx := strings.LastIndex(tripID, "-"); idx >= 0 && idx+1 < len(tripID) {
-		return tripID[idx+1:]
-	}
-	return tripID
-}
 
 func extractPlat(stopName string) string {
 	const prefix = "Platform "

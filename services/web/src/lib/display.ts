@@ -127,7 +127,7 @@ export function padCenter(str: string, len: number): string {
 }
 
 export function statusText(d: Departure): string {
-	if (d.isCancelled) return 'CANCEL';
+	if (d.isCancelled || d.status === 'Cancelled') return 'CANCEL';
 	const s = d.status?.toUpperCase() ?? '';
 	if (s === 'PROCEED' || s === 'WAIT') return s;
 	if (d.delayMinutes && d.delayMinutes > 0) return `DLY +${d.delayMinutes}`;
@@ -135,7 +135,7 @@ export function statusText(d: Departure): string {
 }
 
 export function statusClass(d: Departure): string {
-	if (d.isCancelled) return 'text-red-500';
+	if (d.isCancelled || d.status === 'Cancelled') return 'text-red-500';
 	const s = d.status?.toUpperCase() ?? '';
 	if (s === 'PROCEED') return 'text-green-400';
 	if (s === 'WAIT') return 'text-amber-300';

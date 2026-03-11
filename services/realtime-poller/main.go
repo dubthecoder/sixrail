@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,6 +51,20 @@ func main() {
 
 	mx := metrolinx.NewClient(baseURL, apiKey)
 	lookup := newHTTPRouteLookup(gtfsStaticAddr)
+
+	// Minimal health endpoint so Railway can confirm the process is running.
+	healthPort := config.EnvOr("HEALTH_PORT", "8083")
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("ok"))
+		})
+		slog.Info("health endpoint listening", "port", healthPort)
+		if err := http.ListenAndServe(":"+healthPort, mux); err != nil {
+			slog.Error("health server failed", "error", err)
+		}
+	}()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

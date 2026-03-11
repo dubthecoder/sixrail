@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, untrack } from 'svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 	import { commute } from '$lib/stores/commute';
 	import type { CommuteTrip } from '$lib/stores/commute';
 	import type { Stop } from '$lib/api';
@@ -7,6 +7,37 @@
 	import StationSearchInput from './StationSearchInput.svelte';
 
 	let { stops, onClose }: { stops: Stop[]; onClose: () => void } = $props();
+
+	let panelEl: HTMLDivElement;
+	let previouslyFocused: HTMLElement | null = null;
+
+	onMount(() => {
+		previouslyFocused = document.activeElement as HTMLElement;
+		// Focus the close button on open
+		const closeBtn = panelEl?.querySelector<HTMLElement>('.close-btn');
+		closeBtn?.focus();
+	});
+
+	onDestroy(() => {
+		previouslyFocused?.focus();
+	});
+
+	function trapFocus(e: KeyboardEvent) {
+		if (e.key !== 'Tab') return;
+		const focusable = panelEl?.querySelectorAll<HTMLElement>(
+			'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+		);
+		if (!focusable || focusable.length === 0) return;
+		const first = focusable[0];
+		const last = focusable[focusable.length - 1];
+		if (e.shiftKey && document.activeElement === first) {
+			e.preventDefault();
+			last.focus();
+		} else if (!e.shiftKey && document.activeElement === last) {
+			e.preventDefault();
+			first.focus();
+		}
+	}
 
 	let commuteState = $state({
 		toWork: null as CommuteTrip | null,
@@ -80,8 +111,12 @@
 	<div
 		class="settings-panel"
 		role="presentation"
+		bind:this={panelEl}
 		onclick={(e) => e.stopPropagation()}
-		onkeydown={(e) => e.stopPropagation()}
+		onkeydown={(e) => {
+			e.stopPropagation();
+			trapFocus(e);
+		}}
 	>
 		<div class="panel-header">
 			<h2 class="font-mono text-amber-400 uppercase tracking-widest text-sm">Settings</h2>

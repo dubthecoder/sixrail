@@ -19,7 +19,7 @@ func TestExtractTripNumber(t *testing.T) {
 		{"no-dash-at-end-", "no-dash-at-end-"},
 	}
 	for _, tt := range tests {
-		got := extractTripNumber(tt.input)
+		got := models.ExtractTripNumber(tt.input)
 		if got != tt.want {
 			t.Errorf("extractTripNumber(%q) = %q, want %q", tt.input, got, tt.want)
 		}

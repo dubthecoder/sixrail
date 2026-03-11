@@ -72,7 +72,7 @@
 			</span>
 
 			<span class="col-platform text-white">
-				{#each padCenter(compactPlatform(dep.platform ?? 'WAIT'), 5).split('') as char, j}
+				{#each padCenter(compactPlatform(dep.platform || '--'), 5).split('') as char, j}
 					<SplitFlapChar value={char} delay={50 + j * 12} />
 				{/each}
 			</span>

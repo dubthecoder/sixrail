@@ -4,9 +4,12 @@
 	import { browser } from '$app/environment';
 	import { onMount, onDestroy } from 'svelte';
 	import { track } from '$lib/track';
-	import { connectSSE, disconnectSSE } from '$lib/sse';
+	import { connectSSE, disconnectSSE, onSSEStatus } from '$lib/sse';
 	let { children } = $props();
 	let path = $derived($page.url.pathname);
+
+	// SSE connection status
+	let sseConnected = $state(true);
 
 	// Install prompt
 	let deferredPrompt = $state<any>(null);
@@ -106,6 +109,7 @@
 		}
 
 		connectSSE('/api/sse');
+		onSSEStatus((connected) => (sseConnected = connected));
 	});
 
 	onDestroy(() => {
@@ -126,6 +130,12 @@
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html '<script type="application/ld+json">' + breadcrumbJsonLd + '<' + '/script>'}
 </svelte:head>
+
+{#if !sseConnected}
+	<div class="sse-banner" role="status" aria-live="polite">
+		<span class="font-mono text-xs text-amber-400">LIVE DATA RECONNECTING...</span>
+	</div>
+{/if}
 
 <main class="w-full">
 	{@render children()}
@@ -171,6 +181,13 @@
 </nav>
 
 <style>
+	.sse-banner {
+		text-align: center;
+		padding: 4px 0;
+		background: var(--color-surface-raised);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
 	:global(body) {
 		margin: 0;
 		padding-bottom: 60px;

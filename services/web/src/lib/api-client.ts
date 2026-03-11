@@ -34,11 +34,15 @@ export type Departure = {
 	routeType?: number;
 };
 
-export async function fetchDepartures(stopCode: string, destCode?: string): Promise<Departure[]> {
+export async function fetchDepartures(
+	stopCode: string,
+	destCode?: string,
+	signal?: AbortSignal
+): Promise<Departure[]> {
 	const url = destCode
 		? `/api/departures/${encodeURIComponent(stopCode)}?dest=${encodeURIComponent(destCode)}`
 		: `/api/departures/${encodeURIComponent(stopCode)}`;
-	const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+	const res = await fetch(url, { signal: signal ?? AbortSignal.timeout(10000) });
 	if (!res.ok) throw new ApiError(res.status, `departures: ${res.status}`);
 	return res.json();
 }

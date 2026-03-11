@@ -1,5 +1,16 @@
 package models
 
+import "strings"
+
+// ExtractTripNumber returns the Metrolinx trip number from a GTFS trip ID.
+// GTFS trip IDs have the format "20260424-LW-1731"; the trip number is the last segment.
+func ExtractTripNumber(tripID string) string {
+	if idx := strings.LastIndex(tripID, "-"); idx >= 0 && idx+1 < len(tripID) {
+		return tripID[idx+1:]
+	}
+	return tripID
+}
+
 type Stop struct {
 	ID       string  `json:"id"`
 	Code     string  `json:"code"`

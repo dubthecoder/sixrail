@@ -31,6 +31,8 @@ jobs:
 
       - run: go vet ./sse-push/...
 
+      - run: go build ./sse-push/...
+
   test:
     runs-on: ubuntu-latest
     steps:

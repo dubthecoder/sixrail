@@ -105,8 +105,9 @@ func (c *Client) GetUnionDepartures(ctx context.Context) ([]models.UnionDepartur
 			Stops:      stops,
 		})
 	}
+	// Sort by time, treating times before 06:00 as next-day for midnight-crossing schedules.
 	sort.Slice(deps, func(i, j int) bool {
-		return deps[i].Time < deps[j].Time
+		return sortableTime(deps[i].Time) < sortableTime(deps[j].Time)
 	})
 	return deps, nil
 }
@@ -229,6 +230,15 @@ func (c *Client) GetFares(ctx context.Context, fromCode, toCode string) ([]model
 	return fares, nil
 }
 
+// sortableTime returns a string that sorts correctly across midnight.
+// Times before "06:00" are treated as next-day to keep late-night trains in order.
+func sortableTime(t string) string {
+	if len(t) >= 2 && t < "06:" {
+		return "1" + t // push after "23:xx"
+	}
+	return "0" + t
+}
+
 // parseMetrolinxTime extracts "HH:MM" from "YYYY-MM-DD HH:MM:SS".
 func parseMetrolinxTime(s string) string {
 	t, err := time.Parse("2006-01-02 15:04:05", s)
@@ -240,16 +250,18 @@ func parseMetrolinxTime(s string) string {
 
 // parseStatus maps Metrolinx status codes to human-readable strings.
 // Status "M" = moving (vehicle has GPS), "S" = scheduled (no GPS fix yet).
+// GPS coordinates are used as a fallback when the status code is absent.
 func parseStatus(code string, lat, lon float64) string {
-	if lat > 0 && lon < 0 {
-		return "Moving"
-	}
 	switch code {
 	case "M":
 		return "Moving"
 	case "S":
 		return "On Time"
 	default:
+		// No status code — fall back to GPS coordinates.
+		if lat > 0 && lon < 0 {
+			return "Moving"
+		}
 		return "On Time"
 	}
 }

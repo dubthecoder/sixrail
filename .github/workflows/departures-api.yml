@@ -31,6 +31,8 @@ jobs:
 
       - run: go vet ./departures-api/...
 
+      - run: go build ./departures-api/...
+
   test:
     runs-on: ubuntu-latest
     steps:

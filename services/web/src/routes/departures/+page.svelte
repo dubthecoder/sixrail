@@ -84,7 +84,7 @@
 
 		const stopCode = selectedStation || 'UN';
 		try {
-			const deps = await fetchDepartures(stopCode);
+			const deps = await fetchDepartures(stopCode, undefined, controller.signal);
 			if (controller.signal.aborted) return;
 			allGtfsDepartures = sortByScheduledTime(deps);
 			fetchError = false;

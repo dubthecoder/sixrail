@@ -31,6 +31,8 @@ jobs:
 
       - run: go vet ./realtime-poller/...
 
+      - run: go build ./realtime-poller/...
+
   test:
     runs-on: ubuntu-latest
     steps:

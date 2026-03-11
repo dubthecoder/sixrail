@@ -11,17 +11,21 @@ import (
 	"github.com/teclara/railsix/shared/models"
 )
 
-const torontoTZ = "America/Toronto"
+var torontoLoc *time.Location
+
+func init() {
+	var err error
+	torontoLoc, err = time.LoadLocation("America/Toronto")
+	if err != nil {
+		panic("failed to load America/Toronto timezone: " + err.Error())
+	}
+}
 
 // GetDepartures returns upcoming departures for a stop code, merging static schedule
 // with real-time trip updates. Falls back gracefully if updates are unavailable.
 // If destCode is non-empty, ArrivalTime is populated for each departure.
 func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time, sc *StaticClient, rc *RedisClient) []models.Departure {
-	loc, err := time.LoadLocation(torontoTZ)
-	if err != nil {
-		panic("failed to load America/Toronto timezone: " + err.Error())
-	}
-	nowLocal := now.In(loc)
+	nowLocal := now.In(torontoLoc)
 
 	// Single bulk call to gtfs-static — all filtering done server-side.
 	candidates, err := sc.GetSchedule(stopCode, nowLocal)
@@ -53,7 +57,7 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 	result := make([]models.Departure, 0, len(candidates))
 	for i := range candidates {
 		c := &candidates[i]
-		serviceDay, _ := time.ParseInLocation("2006-01-02", c.ServiceDay, loc)
+		serviceDay, _ := time.ParseInLocation("2006-01-02", c.ServiceDay, torontoLoc)
 		scheduled := serviceDay.Add(time.Duration(c.DepartureNano))
 
 		// Apply real-time delay.
@@ -133,7 +137,7 @@ func findTripUpdate(ctx context.Context, tripID string, rc *RedisClient) (gtfsrt
 	if update, ok := rc.GetTripUpdate(ctx, tripID); ok {
 		return update, true
 	}
-	return rc.GetTripUpdate(ctx, extractTripNumber(tripID))
+	return rc.GetTripUpdate(ctx, models.ExtractTripNumber(tripID))
 }
 
 // findDelay returns the departure delay for a trip at a given stop.
@@ -157,14 +161,6 @@ func findDelay(ctx context.Context, tripID, stopID string, rc *RedisClient) time
 	return 0
 }
 
-// extractTripNumber returns the Metrolinx trip number from a GTFS trip ID.
-// GTFS trip IDs have the format "20260424-LW-1731"; the trip number is the last segment.
-func extractTripNumber(tripID string) string {
-	if idx := strings.LastIndex(tripID, "-"); idx >= 0 && idx+1 < len(tripID) {
-		return tripID[idx+1:]
-	}
-	return tripID
-}
 
 // formatTime returns "HH:MM" in local time.
 func formatTime(t time.Time) string {

@@ -31,6 +31,8 @@ jobs:
 
       - run: go vet ./gtfs-static/...
 
+      - run: go build ./gtfs-static/...
+
   test:
     runs-on: ubuntu-latest
     steps:
