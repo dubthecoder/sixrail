@@ -14,11 +14,13 @@
 	let {
 		departures = [],
 		maxRows = 3,
-		tick = 0
+		tick = 0,
+		fillEmpty = false
 	}: {
 		departures: Departure[];
 		maxRows?: number;
 		tick?: number;
+		fillEmpty?: boolean;
 	} = $props();
 
 	function formatTime(t: string): string {
@@ -30,7 +32,12 @@
 		return !isUpcomingDeparture(d, torontoNow());
 	}
 
+	function isEmpty(d: Departure): boolean {
+		return d === emptyDep;
+	}
+
 	function boardStatusText(d: Departure): string {
+		if (isEmpty(d)) return '-------';
 		if (d.isCancelled || d.status === 'Cancelled') return 'CANCEL';
 		if (hasDeparted(d)) return 'DEPART';
 		if (d.delayMinutes && d.delayMinutes > 0) return `DLY +${d.delayMinutes}`;
@@ -40,6 +47,7 @@
 	}
 
 	function boardStatusClass(d: Departure): string {
+		if (isEmpty(d)) return 'text-gray-600';
 		if (d.isCancelled || d.status === 'Cancelled') return 'text-red-500';
 		if (hasDeparted(d)) return 'text-gray-500';
 		if (d.delayMinutes && d.delayMinutes > 0) return 'text-amber-400';
@@ -60,7 +68,19 @@
 	const STATUS_DELAY_BASE_MS = 320;
 	const STATUS_DELAY_MS = 28;
 
-	let rows = $derived(departures.slice(0, maxRows));
+	const emptyDep: Departure = {
+		line: 'NONE',
+		scheduledTime: '--:--',
+		status: ''
+	};
+
+	let rows = $derived.by(() => {
+		const real = departures.slice(0, maxRows);
+		if (!fillEmpty) return real;
+		const padded = [...real];
+		while (padded.length < maxRows) padded.push(emptyDep);
+		return padded;
+	});
 </script>
 
 <div class="split-flap-board font-mono select-none" role="region" aria-label="Departure board">
@@ -78,7 +98,8 @@
 	{#each rows as dep, i}
 		<div
 			class="board-row"
-			class:next-train={i === 0}
+			class:next-train={i === 0 && !isEmpty(dep)}
+			class:empty-row={isEmpty(dep)}
 			class:cancelled={dep.isCancelled || dep.status === 'Cancelled'}
 		>
 			<span class="col-time text-amber-400">
@@ -168,25 +189,17 @@
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: center;
+		justify-content: center;
 		overflow: hidden;
-	}
-
-	.col-cars {
-		justify-content: center;
-	}
-	.col-platform {
-		justify-content: center;
-	}
-	.col-arrival {
-		justify-content: center;
-	}
-	.col-status {
-		justify-content: center;
 	}
 
 	.board-row.cancelled {
 		opacity: 0.5;
 		text-decoration: line-through;
+	}
+
+	.board-row.empty-row {
+		color: var(--color-muted, #4b5563);
 	}
 
 	@media (max-width: 480px) {

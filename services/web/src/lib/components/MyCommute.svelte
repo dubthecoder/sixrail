@@ -59,7 +59,7 @@
 	});
 
 	let nextDeparture = $derived(upcomingDepartures[0] ?? null);
-	let followUpDepartures = $derived(upcomingDepartures.slice(1, 6));
+	let followUpDepartures = $derived(upcomingDepartures.slice(1, 5));
 
 	async function loadDepartures(trip = activeTrip) {
 		if (!trip) {
@@ -242,7 +242,7 @@
 		{/if}
 
 		<!-- Split-flap board -->
-		<SplitFlapBoard {departures} maxRows={3} {tick} />
+		<SplitFlapBoard {departures} maxRows={5} {tick} fillEmpty />
 
 		<!-- Countdown -->
 		{#if nextDeparture}
@@ -256,11 +256,7 @@
 				{#if followUpDepartures.length > 0}
 					<div class="flex gap-4 mt-1">
 						{#each followUpDepartures as dep}
-							<div class="flex items-center gap-1.5 text-gray-500 text-xs">
-								<span class="uppercase tracking-wider">{departureDisplayTime(dep).slice(0, 5)}</span
-								>
-								<CountdownTimer scheduledTime={departureDisplayTime(dep)} size="small" />
-							</div>
+							<CountdownTimer scheduledTime={departureDisplayTime(dep)} size="small" />
 						{/each}
 					</div>
 				{/if}
