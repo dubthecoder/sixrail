@@ -44,6 +44,7 @@ type departureResponse struct {
 	Platform      string   `json:"platform,omitempty"`
 	DelayMinutes  int      `json:"delayMinutes,omitempty"`
 	Stops         []string `json:"stops,omitempty"`
+	LastStopID    string   `json:"lastStopId,omitempty"`
 	Cars          string   `json:"cars,omitempty"`
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`
@@ -261,6 +262,7 @@ func handleDepartures(sc *StaticClient, rc *RedisClient, mx *metrolinx.Client) h
 				Platform:      d.Platform,
 				DelayMinutes:  d.DelayMinutes,
 				Stops:         d.Stops,
+				LastStopID:    d.LastStopID,
 				Cars:          d.Cars,
 				IsInMotion:    d.IsInMotion,
 				IsCancelled:   d.IsCancelled,

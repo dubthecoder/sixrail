@@ -199,7 +199,7 @@
 	}
 
 	.board-row.empty-row {
-		color: var(--color-muted, #4b5563);
+		color: var(--color-muted);
 	}
 
 	@media (max-width: 480px) {

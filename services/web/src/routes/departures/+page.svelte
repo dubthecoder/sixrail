@@ -147,7 +147,10 @@
 	}
 
 	function detectFullscreen() {
-		return !!document.fullscreenElement || window.innerHeight >= screen.height - 40;
+		if (document.fullscreenElement) return true;
+		// Viewport heuristic only for TV browsers that lack the Fullscreen API
+		if (!document.fullscreenEnabled && window.innerHeight >= screen.height - 40) return true;
+		return false;
 	}
 
 	function onFullscreenChange() {
@@ -487,7 +490,7 @@
 							{/each}
 							{#if dep.stops && dep.stops.length > 0}
 								<span
-									class="direction-tag {dep.stops.some((s) => s.toUpperCase().includes('UNION'))
+									class="direction-tag {dep.lastStopId === 'UN'
 										? 'text-green-400'
 										: 'text-purple-400'}">TO {dep.stops[dep.stops.length - 1].toUpperCase()}</span
 								>
@@ -518,9 +521,7 @@
 
 				{#if isMobile && dep.stops && dep.stops.length > 0}
 					<div
-						class="direction-line {dep.stops.some((s) => s.toUpperCase().includes('UNION'))
-							? 'text-green-400'
-							: 'text-purple-400'}"
+						class="direction-line {dep.lastStopId === 'UN' ? 'text-green-400' : 'text-purple-400'}"
 					>
 						TO {dep.stops[dep.stops.length - 1].toUpperCase()}
 					</div>
@@ -617,37 +618,23 @@
 		justify-content: space-between;
 	}
 
-	.mobile-header-bottom {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-	}
-
-	.mobile-health {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-		align-items: center;
-	}
-
 	/* ── Mobile station picker ── */
 	.mobile-picker-backdrop {
 		position: fixed;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.7);
-		z-index: 50;
+		z-index: 60;
 	}
 
 	.mobile-picker {
 		position: fixed;
-		bottom: 0;
+		top: 0;
 		left: 0;
 		right: 0;
-		z-index: 51;
+		z-index: 61;
 		background: var(--color-surface);
-		border-top-left-radius: 16px;
-		border-top-right-radius: 16px;
+		border-bottom-left-radius: 16px;
+		border-bottom-right-radius: 16px;
 		max-height: 75dvh;
 		display: flex;
 		flex-direction: column;
@@ -901,7 +888,7 @@
 		border: none;
 		color: var(--color-dim);
 		font-family: inherit;
-		font-size: 0.7rem;
+		font-size: 14px;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		cursor: pointer;

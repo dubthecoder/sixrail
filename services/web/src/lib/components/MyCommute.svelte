@@ -274,13 +274,14 @@
 		</div>
 
 		<footer class="mt-auto pt-2 pb-2 text-center max-w-sm mx-auto shrink-0">
-			<p class="text-gray-500 text-[9px] font-mono leading-relaxed">
+			<p class="text-gray-400 text-[10px] font-mono leading-relaxed">
 				Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
-				Always confirm with official sources before travelling.
+				Always confirm with official sources.
 			</p>
-			<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-1.5">
-				<a href="mailto:hello@railsix.com" class="hover:text-gray-400 transition-colors"
-					>hello@railsix.com</a
+			<p class="text-gray-400 text-[10px] tracking-wide font-mono mt-1.5">
+				<a
+					href="mailto:hello@railsix.com"
+					class="text-amber-400 hover:text-amber-300 transition-colors">hello@railsix.com</a
 				>
 				&middot; &copy; {new Date().getFullYear()}
 				<a

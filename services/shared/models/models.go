@@ -41,6 +41,7 @@ type Departure struct {
 	RouteColor    string   `json:"routeColor,omitempty"`
 	DelayMinutes  int      `json:"delayMinutes,omitempty"`
 	Stops         []string `json:"stops,omitempty"`
+	LastStopID    string   `json:"lastStopId,omitempty"` // stop code of final destination
 	Cars          string   `json:"cars,omitempty"` // number of coaches
 	IsInMotion    bool     `json:"isInMotion,omitempty"`
 	IsCancelled   bool     `json:"isCancelled,omitempty"`

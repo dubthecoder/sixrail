@@ -84,6 +84,7 @@ func GetDepartures(ctx context.Context, stopCode, destCode string, now time.Time
 			RouteColor:    c.RouteColor,
 			DelayMinutes:  delayMin,
 			Stops:         c.Stops,
+			LastStopID:    c.LastStopID,
 			IsExpress:     c.IsExpress,
 			RouteType:     c.RouteType,
 			TripNumber:    c.TripNumber,

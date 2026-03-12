@@ -28,6 +28,7 @@ export type Departure = {
 	platform?: string;
 	delayMinutes?: number;
 	stops?: string[];
+	lastStopId?: string;
 	cars?: string;
 	isInMotion?: boolean;
 	isCancelled?: boolean;

@@ -90,6 +90,7 @@ type ScheduleCandidate struct {
 	ScheduledTime  string   `json:"scheduledTime"`
 	Platform       string   `json:"platform"`
 	Stops          []string `json:"stops"`
+	LastStopID     string   `json:"lastStopId"`
 	IsExpress      bool     `json:"isExpress"`
 	StopID         string   `json:"stopId"`
 	DepartureNano  int64    `json:"departureNano"`

@@ -407,7 +407,8 @@ type ScheduleCandidate struct {
 	Headsign       string   `json:"headsign"`
 	ScheduledTime  string   `json:"scheduledTime"` // "HH:MM"
 	Platform       string   `json:"platform"`
-	Stops          []string `json:"stops"`    // remaining stop names after departure
+	Stops          []string `json:"stops"`       // remaining stop names after departure
+	LastStopID     string   `json:"lastStopId"` // stop code of final destination
 	IsExpress      bool     `json:"isExpress"`
 	StopID         string   `json:"stopId"`
 	DepartureNano  int64    `json:"departureNano"` // nanoseconds from midnight of service day
@@ -528,6 +529,12 @@ func (s *StaticStore) ScheduleForStop(code string, now time.Time, lookAhead time
 			}
 		}
 
+		// Last stop ID for destination identification.
+		var lastStopID string
+		if len(trip.Stops) > 0 {
+			lastStopID = trip.Stops[len(trip.Stops)-1].StopID
+		}
+
 		result = append(result, ScheduleCandidate{
 			TripID:         c.dep.TripID,
 			TripNumber:     tripNum,
@@ -539,6 +546,7 @@ func (s *StaticStore) ScheduleForStop(code string, now time.Time, lookAhead time
 			ScheduledTime:  fmtTime(c.serviceDay.Add(time.Duration(c.dep.DepartureTime))),
 			Platform:       platform,
 			Stops:          stops,
+			LastStopID:     lastStopID,
 			IsExpress:      isExpress,
 			StopID:         c.stopID,
 			DepartureNano:  c.dep.DepartureTime,

@@ -18,6 +18,7 @@
 	}
 
 	let flipGeneration = 0;
+	let hasFlippedOnce = false;
 
 	async function flipToTarget(target: string) {
 		const gen = ++flipGeneration;
@@ -26,6 +27,22 @@
 
 		await new Promise((r) => setTimeout(r, delay));
 		if (gen !== flipGeneration) return;
+
+		// First flip: single direct flip to target (skip intermediate chars)
+		if (!hasFlippedOnce) {
+			hasFlippedOnce = true;
+			flipFrom = displayValue.toUpperCase();
+			flipTo = targetUpper;
+			isFlipping = true;
+			await new Promise((r) => setTimeout(r, FLIP_DURATION_MS));
+			if (gen !== flipGeneration) {
+				isFlipping = false;
+				return;
+			}
+			isFlipping = false;
+			displayValue = targetUpper;
+			return;
+		}
 
 		let current = displayValue.toUpperCase();
 		let steps = 0;

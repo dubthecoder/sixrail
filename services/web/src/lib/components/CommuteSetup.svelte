@@ -156,23 +156,24 @@
 	</div>
 
 	<footer class="pt-4 pb-2 text-center max-w-sm flex-shrink">
-		<p class="text-gray-500 text-[11px] font-mono leading-relaxed">
+		<p class="text-gray-400 text-[10px] font-mono leading-relaxed">
 			Real-time GO Transit tracking with live departures, delay alerts, and countdown timers for
 			your daily commute.
 		</p>
-		<p class="text-gray-500 text-[10px] font-mono mt-3 leading-relaxed text-center">
+		<p class="text-gray-400 text-[10px] font-mono mt-3 leading-relaxed text-center">
 			Set up your commute by selecting your origin and destination stations for each direction. Once
-			configured, you'll see live departure times, platform info, and delay updates. You can also
-			visit the <a href="/departures" class="text-amber-400 hover:text-amber-300 transition-colors"
-				>departure board</a
-			> for a full split-flap display of upcoming trains at any station.
+			configured, you'll see live departure times, platform info, and delay updates.
 		</p>
-		<p class="text-gray-500 text-[9px] font-mono mt-3 leading-relaxed">
+		<p class="text-gray-400 text-[10px] font-mono mt-3 leading-relaxed">
 			Not affiliated with Metrolinx or GO Transit. Schedule data may be inaccurate or delayed.
-			Always confirm with official sources before travelling.
+			Always confirm with official sources.
 		</p>
-		<p class="text-gray-500 text-[10px] tracking-wide font-mono mt-3">
-			&copy; {new Date().getFullYear()}
+		<p class="text-gray-400 text-[10px] tracking-wide font-mono mt-3">
+			<a
+				href="mailto:hello@railsix.com"
+				class="text-amber-400 hover:text-amber-300 transition-colors">hello@railsix.com</a
+			>
+			&middot; &copy; {new Date().getFullYear()}
 			<a
 				href="https://teclara.tech"
 				target="_blank"
