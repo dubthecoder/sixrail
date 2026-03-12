@@ -5,14 +5,12 @@
 		scheduledTime,
 		delayedTime,
 		departureTime,
-		delayMinutes,
 		size = 'large',
 		empty = false
 	}: {
 		scheduledTime: string;
 		delayedTime?: string;
 		departureTime?: string;
-		delayMinutes?: number;
 		size?: 'large' | 'small';
 		empty?: boolean;
 	} = $props();

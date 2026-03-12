@@ -264,7 +264,6 @@
 						<CountdownTimer
 							scheduledTime={departureDisplayTime(followUpDepartures[i])}
 							departureTime={followUpDepartures[i].scheduledTime}
-							delayMinutes={followUpDepartures[i].delayMinutes}
 							size="small"
 						/>
 					{:else}
