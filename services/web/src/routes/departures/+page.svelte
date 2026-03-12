@@ -274,106 +274,178 @@
 </svelte:head>
 
 <div class="board font-mono select-none bg-surface-inset text-white" bind:this={boardEl}>
-	<!-- Header -->
-	<div class="board-header">
-		<div>
-			<h1 class="text-amber-400 font-bold uppercase tracking-[0.2em]" style="font-size: 0.85em;">
-				{selectedStopName || 'Union Station GO'}
-			</h1>
-			<p class="text-gray-600 tracking-widest uppercase" style="font-size: 0.6em;">Departures</p>
-		</div>
-		{#if networkHealth.length > 0}
-			<div class="network-health">
-				<span class="text-gray-500 uppercase tracking-wider" style="font-size: 0.55em;"
-					>Active Trains</span
+	<!-- Header: Desktop -->
+	{#if !isMobile}
+		<div class="board-header">
+			<div>
+				<h1 class="text-amber-400 font-bold uppercase tracking-[0.2em]" style="font-size: 0.85em;">
+					{selectedStopName || 'Union Station GO'}
+				</h1>
+				<p class="text-gray-400 tracking-widest uppercase" style="font-size: 0.6em;">Departures</p>
+			</div>
+			{#if networkHealth.length > 0}
+				<div class="network-health">
+					<span class="text-gray-400 uppercase tracking-wider" style="font-size: 0.55em;"
+						>Active Trains</span
+					>
+					<div class="network-health-pills">
+						{#each networkHealth.toSorted((a, b) => a.lineCode.localeCompare(b.lineCode)) as line}
+							<div class="health-pill" title="{line.lineName}: {line.activeTrips} active trains">
+								<span class="text-gray-400">{line.lineCode}</span>
+								<span class="text-green-400 font-bold">{line.activeTrips}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+			<div class="flex items-center gap-0.5em">
+				<div class="text-amber-400 tracking-widest tabular-nums" style="font-size: 1.1em;">
+					{clock}
+				</div>
+				<button
+					class="fullscreen-btn"
+					onclick={toggleFullscreen}
+					aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+					title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen (TV mode)'}
 				>
-				<div class="network-health-pills">
-					{#each networkHealth.toSorted((a, b) => a.lineCode.localeCompare(b.lineCode)) as line}
-						<div class="health-pill" title="{line.lineName}: {line.activeTrips} active trains">
-							<span class="text-gray-400">{line.lineCode}</span>
-							<span class="text-green-400 font-bold">{line.activeTrips}</span>
+					{#if isFullscreen}
+						<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"
+							><path
+								d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
+							/></svg
+						>
+					{:else}
+						<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"
+							><path
+								d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+							/></svg
+						>
+					{/if}
+				</button>
+			</div>
+			{#if !isFullscreen}<div class="station-picker relative">
+					{#if selectedStation}
+						<button
+							class="uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1"
+							style="font-size: 0.6em;"
+							onclick={clearStation}
+						>
+							{selectedStopName}
+							<span class="text-gray-400">&times;</span>
+						</button>
+					{:else}
+						<button
+							class="uppercase tracking-widest text-gray-400 hover:text-amber-400 transition-colors"
+							style="font-size: 0.6em;"
+							onclick={() => (dropdownOpen = !dropdownOpen)}
+						>
+							Station ▾
+						</button>
+					{/if}
+
+					{#if dropdownOpen}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div class="dropdown-backdrop" onclick={() => (dropdownOpen = false)}></div>
+						<div class="dropdown">
+							<!-- svelte-ignore a11y_autofocus -->
+							<input
+								class="dropdown-search"
+								type="text"
+								placeholder="Search stations..."
+								bind:value={searchQuery}
+								autofocus
+							/>
+							<div class="dropdown-list">
+								{#each filteredStops as stop}
+									<button class="dropdown-item" onclick={() => selectStation(stop)}>
+										{stop.name}
+									</button>
+								{/each}
+								{#if filteredStops.length === 0}
+									<div class="px-3 py-2 text-gray-400 text-xs">No stations found</div>
+								{/if}
+							</div>
 						</div>
-					{/each}
+					{/if}
+				</div>{/if}
+		</div>
+	{:else}
+		<!-- Header: Mobile -->
+		<div class="mobile-header">
+			<div class="mobile-header-top">
+				<div>
+					<h1 class="text-amber-400 font-bold uppercase tracking-wider text-base">
+						{selectedStopName || 'Union Station GO'}
+					</h1>
+					<p class="text-gray-400 tracking-widest uppercase text-[10px] mt-0.5">Departures</p>
+				</div>
+				<div class="text-amber-400 tracking-widest tabular-nums text-lg">
+					{clock}
 				</div>
 			</div>
-		{/if}
-		<div class="flex items-center gap-0.5em">
-			<div class="text-amber-400 tracking-widest tabular-nums" style="font-size: 1.1em;">
-				{clock}
-			</div>
-			<button
-				class="fullscreen-btn"
-				onclick={toggleFullscreen}
-				aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-				title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen (TV mode)'}
-			>
-				{#if isFullscreen}
-					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"
-						><path
-							d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
-						/></svg
+			<div>
+				{#if selectedStation}
+					<button
+						class="uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1 text-xs py-1"
+						onclick={clearStation}
 					>
+						{selectedStopName}
+						<span class="text-gray-400">&times;</span>
+					</button>
 				{:else}
-					<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"
-						><path
-							d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
-						/></svg
+					<button
+						class="uppercase tracking-widest text-gray-400 hover:text-amber-400 transition-colors text-xs py-1"
+						onclick={() => (dropdownOpen = !dropdownOpen)}
 					>
+						Station ▾
+					</button>
 				{/if}
-			</button>
-		</div>
-		<div class="station-picker relative">
-			{#if selectedStation}
-				<button
-					class="uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1"
-					style="font-size: 0.6em;"
-					onclick={clearStation}
-				>
-					{selectedStopName}
-					<span class="text-gray-500">&times;</span>
-				</button>
-			{:else}
-				<button
-					class="uppercase tracking-widest text-gray-500 hover:text-amber-400 transition-colors"
-					style="font-size: 0.6em;"
-					onclick={() => (dropdownOpen = !dropdownOpen)}
-				>
-					Station ▾
-				</button>
-			{/if}
+			</div>
 
 			{#if dropdownOpen}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="dropdown-backdrop" onclick={() => (dropdownOpen = false)}></div>
-				<div class="dropdown">
+				<div class="mobile-picker-backdrop" onclick={() => (dropdownOpen = false)}></div>
+				<div class="mobile-picker">
+					<div class="mobile-picker-header">
+						<h2 class="text-amber-400 uppercase tracking-widest text-sm font-bold">
+							Select Station
+						</h2>
+						<button
+							class="text-gray-400 hover:text-white text-xl leading-none"
+							onclick={() => (dropdownOpen = false)}
+						>
+							&times;
+						</button>
+					</div>
 					<!-- svelte-ignore a11y_autofocus -->
 					<input
-						class="dropdown-search"
+						class="mobile-picker-search"
 						type="text"
 						placeholder="Search stations..."
 						bind:value={searchQuery}
 						autofocus
 					/>
-					<div class="dropdown-list">
+					<div class="mobile-picker-list">
 						{#each filteredStops as stop}
-							<button class="dropdown-item" onclick={() => selectStation(stop)}>
+							<button class="mobile-picker-item" onclick={() => selectStation(stop)}>
 								{stop.name}
 							</button>
 						{/each}
 						{#if filteredStops.length === 0}
-							<div class="px-3 py-2 text-gray-600 text-xs">No stations found</div>
+							<div class="text-gray-400 text-center py-4 text-sm">No stations found</div>
 						{/if}
 					</div>
 				</div>
 			{/if}
 		</div>
-	</div>
+	{/if}
 
 	<div class="col-headers flap-row-station">
 		<span class="col-time text-amber-400">TIME</span>
 		<span class="col-line text-white">LINE</span>
-		<span class="col-cars text-gray-400">CRS</span>
+		{#if !isMobile}<span class="col-cars text-gray-400">CRS</span>{/if}
 		<span class="col-plat text-white">PLAT</span>
 		<span class="col-status text-gray-400">STATUS</span>
 	</div>
@@ -423,11 +495,13 @@
 						{/if}
 					</span>
 
-					<span class="col-cars text-gray-400">
-						{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
-							<SplitFlapChar value={char} delay={40 + j * 15} />
-						{/each}
-					</span>
+					{#if !isMobile}
+						<span class="col-cars text-gray-400">
+							{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
+								<SplitFlapChar value={char} delay={40 + j * 15} />
+							{/each}
+						</span>
+					{/if}
 
 					<span class="col-plat text-white" class:text-amber-300={isWaiting(dep)}>
 						{#each padCenter(platformText(dep), 5).split('') as char, j}
@@ -455,7 +529,7 @@
 					<div class="meta-line" use:marquee>
 						<span class="stops-scroll">
 							{#each metaParts as part, pi}
-								{#if pi > 0}<span class="text-gray-600"> · </span>{/if}
+								{#if pi > 0}<span class="text-gray-400"> · </span>{/if}
 								<span class={part.cls}>{part.text.toUpperCase()}</span>
 							{/each}
 						</span>
@@ -469,7 +543,7 @@
 
 		{#if trainDepartures.length === 0}
 			<div
-				class="text-gray-700 font-mono text-center tracking-widest uppercase"
+				class="text-gray-400 font-mono text-center tracking-widest uppercase"
 				style="font-size: 0.8em; padding: 2em 0;"
 			>
 				No departures
@@ -510,7 +584,10 @@
 		min-height: calc(100dvh - 60px);
 		display: flex;
 		flex-direction: column;
-		font-size: clamp(12px, 2.1vw, 42px);
+		font-size: clamp(12px, 2.1vw, 25px);
+		max-width: 1200px;
+		margin: 0 auto;
+		width: 100%;
 	}
 
 	.board-header {
@@ -522,6 +599,114 @@
 		flex-shrink: 0;
 		flex-wrap: wrap;
 		gap: 0.3em;
+	}
+
+	/* ── Mobile header ── */
+	.mobile-header {
+		display: flex;
+		flex-direction: column;
+		padding: 12px 16px;
+		gap: 10px;
+		border-bottom: 1px solid var(--color-border-subtle);
+		flex-shrink: 0;
+	}
+
+	.mobile-header-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.mobile-header-bottom {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.mobile-health {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		align-items: center;
+	}
+
+	/* ── Mobile station picker ── */
+	.mobile-picker-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.7);
+		z-index: 50;
+	}
+
+	.mobile-picker {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 51;
+		background: var(--color-surface);
+		border-top-left-radius: 16px;
+		border-top-right-radius: 16px;
+		max-height: 75dvh;
+		display: flex;
+		flex-direction: column;
+		font-size: 16px;
+	}
+
+	.mobile-picker-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 16px 20px 8px;
+	}
+
+	.mobile-picker-search {
+		width: 100%;
+		padding: 12px 20px;
+		background: var(--color-surface-overlay);
+		border: none;
+		border-bottom: 1px solid var(--color-border);
+		color: white;
+		font-family: inherit;
+		font-size: 16px;
+		letter-spacing: 0.05em;
+		outline: none;
+	}
+
+	.mobile-picker-search::placeholder {
+		color: var(--color-muted);
+		text-transform: uppercase;
+	}
+
+	.mobile-picker-list {
+		flex: 1;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		-webkit-overflow-scrolling: touch;
+		padding-bottom: env(safe-area-inset-bottom, 20px);
+	}
+
+	.mobile-picker-item {
+		display: block;
+		width: 100%;
+		text-align: left;
+		padding: 14px 20px;
+		background: none;
+		border: none;
+		border-bottom: 1px solid var(--color-border-subtle);
+		color: var(--color-dim);
+		font-family: inherit;
+		font-size: 14px;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		cursor: pointer;
+		transition: background 0.1s;
+	}
+
+	.mobile-picker-item:active {
+		background: var(--color-surface-hover);
+		color: var(--color-accent);
 	}
 
 	.network-health {
@@ -743,36 +928,26 @@
 
 	/* ── Small screens ── */
 	@media (max-width: 480px) {
-		.fullscreen-btn {
-			display: none;
-		}
 		.board {
-			font-size: clamp(11px, 3.5vw, 18px);
-		}
-
-		.board-header {
-			flex-wrap: wrap;
-			gap: 0.2em 0.5em;
-		}
-
-		.network-health {
-			order: 4;
-			width: 100%;
-			justify-content: center;
-			padding-top: 0.2em;
-			border-top: 1px solid var(--color-border-subtle);
+			font-size: clamp(13px, 4.2vw, 20px);
 		}
 
 		.flap-row-station {
-			grid-template-columns: 5ch 1fr 3ch 5ch 7ch;
+			grid-template-columns: 5ch 1fr 5ch 7ch;
 			gap: 0.6em;
 		}
 	}
 
-	/* ── Large screens / TV ── */
-	@media (min-width: 1400px) {
+	/* ── Large screens: lock font once board hits max-width ── */
+	@media (min-width: 1200px) {
 		.board {
-			font-size: clamp(20px, 2.1vw, 54px);
+			font-size: 25px;
 		}
+	}
+
+	/* ── Fullscreen / TV: unlock scaling ── */
+	:global(body.is-fullscreen) .board {
+		max-width: none;
+		font-size: clamp(20px, 2.1vw, 54px);
 	}
 </style>

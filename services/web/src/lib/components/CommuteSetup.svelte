@@ -73,7 +73,7 @@
 
 		<div class="flex items-center justify-center gap-4 mb-8 font-mono text-xs">
 			<span class={step === 1 ? 'text-amber-400' : 'text-gray-400'}>1 TO WORK</span>
-			<span class="text-gray-700">→</span>
+			<span class="text-gray-400">→</span>
 			<span class={step === 2 ? 'text-amber-400' : 'text-gray-400'}>2 TO HOME</span>
 		</div>
 

@@ -59,7 +59,7 @@
 	});
 
 	let nextDeparture = $derived(upcomingDepartures[0] ?? null);
-	let followUpDepartures = $derived(upcomingDepartures.slice(1, 5));
+	let followUpDepartures = $derived(upcomingDepartures.slice(1, 4));
 
 	async function loadDepartures(trip = activeTrip) {
 		if (!trip) {
@@ -244,25 +244,27 @@
 		{/if}
 
 		<!-- Split-flap board -->
-		<SplitFlapBoard {departures} maxRows={5} {tick} fillEmpty />
+		<SplitFlapBoard {departures} maxRows={4} {tick} fillEmpty />
 
 		<!-- Countdown -->
-		<div class="flex flex-col items-center gap-1 shrink-0">
+		<div class="countdown-group shrink-0">
 			{#if nextDeparture}
 				<CountdownTimer
-					scheduledTime={departureDisplayTime(nextDeparture)}
-					originalScheduledTime={departureDisplayTime(nextDeparture) !== nextDeparture.scheduledTime
-						? nextDeparture.scheduledTime
+					scheduledTime={nextDeparture.scheduledTime}
+					delayedTime={departureDisplayTime(nextDeparture) !== nextDeparture.scheduledTime
+						? departureDisplayTime(nextDeparture)
 						: undefined}
 				/>
 			{:else}
 				<CountdownTimer scheduledTime="" empty />
 			{/if}
-			<div class="flex gap-4 mt-1">
-				{#each Array(4) as _, i}
+			<div class="followup-timers">
+				{#each Array(3) as _, i}
 					{#if followUpDepartures[i]}
 						<CountdownTimer
 							scheduledTime={departureDisplayTime(followUpDepartures[i])}
+							departureTime={followUpDepartures[i].scheduledTime}
+							delayMinutes={followUpDepartures[i].delayMinutes}
 							size="small"
 						/>
 					{:else}
@@ -296,3 +298,19 @@
 		<SettingsPanel {stops} onClose={() => (showSettings = false)} />
 	{/if}
 {/if}
+
+<style>
+	.countdown-group {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.followup-timers {
+		display: flex;
+		flex-direction: row;
+		gap: 16px;
+		margin-top: 4px;
+	}
+</style>

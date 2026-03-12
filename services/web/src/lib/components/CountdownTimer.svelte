@@ -3,27 +3,31 @@
 
 	let {
 		scheduledTime,
-		originalScheduledTime,
+		delayedTime,
+		departureTime,
+		delayMinutes,
 		size = 'large',
 		empty = false
 	}: {
 		scheduledTime: string;
-		originalScheduledTime?: string;
+		delayedTime?: string;
+		departureTime?: string;
+		delayMinutes?: number;
 		size?: 'large' | 'small';
 		empty?: boolean;
 	} = $props();
 
 	let display = $state('--:--');
-	let originalDisplay = $state('');
+	let delayedDisplay = $state('');
 
 	function tick() {
 		if (empty) {
 			display = '00:00';
-			originalDisplay = '';
+			delayedDisplay = '';
 			return;
 		}
 		display = formatCountdown(scheduledTime);
-		originalDisplay = originalScheduledTime ? formatCountdown(originalScheduledTime) : '';
+		delayedDisplay = delayedTime ? formatCountdown(delayedTime) : '';
 	}
 
 	$effect(() => {
@@ -48,11 +52,16 @@
 		class:text-gray-400={display === '00:00'}
 		class:time-small={size === 'small'}>{display}</span
 	>
-	{#if size === 'large' && originalDisplay}
+	{#if size === 'large' && delayedDisplay}
 		<div class="scheduled-line">
-			<span class="text-amber-400/60 text-xs uppercase tracking-wider">Scheduled</span>
-			<span class="font-mono text-amber-400/60 tabular-nums text-sm">{originalDisplay}</span>
+			<span class="text-red-500/80 text-xs uppercase tracking-wider">Delayed</span>
+			<span class="font-mono text-red-500/80 tabular-nums text-sm">{delayedDisplay}</span>
 		</div>
+	{/if}
+	{#if size === 'small' && departureTime}
+		<span class="text-gray-400 text-sm font-mono tabular-nums mt-0.5">
+			{departureTime}
+		</span>
 	{/if}
 </div>
 
