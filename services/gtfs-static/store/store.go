@@ -427,6 +427,7 @@ func (s *StaticStore) ScheduleForStop(code string, now time.Time, lookAhead time
 
 	today := truncateDay(now)
 	yesterday := today.Add(-24 * time.Hour)
+	tomorrow := today.Add(24 * time.Hour)
 
 	stopIDSet := make(map[string]bool, len(stopIDs))
 	for _, id := range stopIDs {
@@ -456,7 +457,7 @@ func (s *StaticStore) ScheduleForStop(code string, now time.Time, lookAhead time
 				continue
 			}
 
-			for _, serviceDay := range []time.Time{today, yesterday} {
+			for _, serviceDay := range []time.Time{today, yesterday, tomorrow} {
 				svc, ok := s.services[dep.ServiceID]
 				if !ok || !serviceActive(&svc, serviceDay) {
 					continue
