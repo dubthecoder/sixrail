@@ -159,7 +159,7 @@ func handleSchedule(s *store.StaticStore) http.HandlerFunc {
 		} else {
 			now = time.Now().In(loc)
 		}
-		candidates := s.ScheduleForStop(code, now, 12*time.Hour)
+		candidates := s.ScheduleForStop(code, now, 3*time.Hour)
 		if candidates == nil {
 			candidates = []store.ScheduleCandidate{}
 		}
