@@ -1,22 +1,38 @@
 <script lang="ts">
 	import SplitFlapChar from './SplitFlapChar.svelte';
 	import type { Departure } from '$lib/api-client';
-	import { padRight, padCenter, departureDisplayTime, isWaiting, platformText } from '$lib/display';
+	import {
+		padRight,
+		padCenter,
+		departureDisplayTime,
+		isUpcomingDeparture,
+		isWaiting,
+		platformText,
+		torontoNow
+	} from '$lib/display';
 
 	let {
 		departures = [],
-		maxRows = 3
+		maxRows = 3,
+		tick = 0
 	}: {
 		departures: Departure[];
 		maxRows?: number;
+		tick?: number;
 	} = $props();
 
 	function formatTime(t: string): string {
 		return t.slice(0, 5);
 	}
 
+	function hasDeparted(d: Departure): boolean {
+		tick; // re-evaluate each tick
+		return !isUpcomingDeparture(d, torontoNow());
+	}
+
 	function boardStatusText(d: Departure): string {
 		if (d.isCancelled || d.status === 'Cancelled') return 'CANCEL';
+		if (hasDeparted(d)) return 'DEPART';
 		if (d.delayMinutes && d.delayMinutes > 0) return `DLY +${d.delayMinutes}`;
 		const s = d.status?.toUpperCase() ?? '';
 		if (s === 'PROCEED') return s;
@@ -25,6 +41,7 @@
 
 	function boardStatusClass(d: Departure): string {
 		if (d.isCancelled || d.status === 'Cancelled') return 'text-red-500';
+		if (hasDeparted(d)) return 'text-gray-500';
 		if (d.delayMinutes && d.delayMinutes > 0) return 'text-amber-400';
 		const s = d.status?.toUpperCase() ?? '';
 		if (s === 'PROCEED') return 'text-green-400';

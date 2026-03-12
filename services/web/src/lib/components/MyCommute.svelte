@@ -242,7 +242,7 @@
 		{/if}
 
 		<!-- Split-flap board -->
-		<SplitFlapBoard {departures} maxRows={3} />
+		<SplitFlapBoard {departures} maxRows={3} {tick} />
 
 		<!-- Countdown -->
 		{#if nextDeparture}
