@@ -68,9 +68,9 @@
 	<div class="board-row board-header-row">
 		<span class="col-time text-amber-400">TIME</span>
 		<span class="col-route text-white">LINE</span>
-		<span class="col-cars text-gray-400">CRS</span>
+		<span class="col-cars hide-mobile text-gray-400">CRS</span>
 		<span class="col-platform text-white">PLAT</span>
-		<span class="col-arrival text-amber-300">ARRV</span>
+		<span class="col-arrival hide-mobile text-amber-300">ARRV</span>
 		<span class="col-status text-gray-400">STATUS</span>
 	</div>
 
@@ -93,7 +93,7 @@
 				{/each}
 			</span>
 
-			<span class="col-cars text-gray-400">
+			<span class="col-cars hide-mobile text-gray-400">
 				{#each padRight(dep.cars && dep.cars !== '-' ? dep.cars + 'C' : '---', 3).split('') as char, j}
 					<SplitFlapChar value={char} delay={CARS_DELAY_BASE_MS + j * CARS_DELAY_MS} />
 				{/each}
@@ -105,7 +105,7 @@
 				{/each}
 			</span>
 
-			<span class="col-arrival text-amber-300">
+			<span class="col-arrival hide-mobile text-amber-300">
 				{#each padRight(dep.arrivalTime ?? '-----', 5).split('') as char, j}
 					<SplitFlapChar value={char} delay={ARRIVAL_DELAY_BASE_MS + j * ARRIVAL_DELAY_MS} />
 				{/each}
@@ -191,15 +191,18 @@
 
 	@media (max-width: 480px) {
 		.split-flap-board {
-			font-size: 11px;
 			padding: 8px;
 			width: 100%;
 			box-sizing: border-box;
 		}
 
+		.hide-mobile {
+			display: none;
+		}
+
 		.board-row {
-			grid-template-columns: 6fr 5fr 4fr 6fr 6fr 9fr;
-			gap: 2px;
+			grid-template-columns: 7fr 5fr 6fr 8fr;
+			gap: 6px;
 		}
 	}
 </style>
