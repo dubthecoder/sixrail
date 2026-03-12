@@ -83,14 +83,14 @@ type NetworkLine struct {
 
 // ServiceGlanceEntry holds cached data from the ServiceataGlance/Trains/All endpoint.
 type ServiceGlanceEntry struct {
-	TripNumber   string
-	LineCode     string
-	LineName     string // Display field
-	Cars         string
-	DelaySeconds int
-	Lat          float64
-	Lon          float64
-	IsInMotion   bool
+	TripNumber   string  `json:"tripNumber"`
+	LineCode     string  `json:"lineCode"`
+	LineName     string  `json:"lineName"`
+	Cars         string  `json:"cars"`
+	DelaySeconds int     `json:"delaySeconds"`
+	Lat          float64 `json:"lat"`
+	Lon          float64 `json:"lon"`
+	IsInMotion   bool    `json:"isInMotion"`
 }
 
 type Alert struct {
