@@ -61,17 +61,31 @@
 	let nextDeparture = $derived(upcomingDepartures[0] ?? null);
 	let followUpDepartures = $derived(upcomingDepartures.slice(1, 4));
 
+	let loadController: AbortController | null = null;
+
 	async function loadDepartures(trip = activeTrip) {
+		if (loadController) loadController.abort();
+
 		if (!trip) {
 			departures = [];
 			fetchError = false;
 			return;
 		}
+
+		const controller = new AbortController();
+		loadController = controller;
+
 		try {
-			const result = await fetchDepartures(trip.originCode, trip.destinationCode);
+			const result = await fetchDepartures(
+				trip.originCode,
+				trip.destinationCode,
+				controller.signal
+			);
+			if (controller.signal.aborted) return;
 			departures = result.departures;
 			fetchError = false;
 		} catch (err) {
+			if (controller.signal.aborted) return;
 			fetchError = true;
 			console.error('Failed to load departures:', err);
 		}
@@ -168,7 +182,7 @@
 
 	// Pass empty array — AlertBanner shows all alerts when no route filter is provided
 	// TODO: store route names in commute trips to enable route-specific filtering
-	let activeRouteNames = $derived<string[]>([]);
+	const activeRouteNames: string[] = [];
 </script>
 
 {#if !commuteState.toWork && !commuteState.toHome}

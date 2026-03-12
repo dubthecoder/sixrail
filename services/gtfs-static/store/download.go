@@ -48,7 +48,7 @@ func DownloadURL(ctx context.Context, rawURL string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading response from %s: %w", rawURL, err)
 	}
-	if int64(len(data)) >= maxBytes {
+	if int64(len(data)) > maxBytes {
 		return nil, fmt.Errorf("response from %s exceeds %d byte limit", rawURL, maxBytes)
 	}
 	return data, nil

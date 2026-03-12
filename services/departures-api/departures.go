@@ -174,7 +174,7 @@ func findDelay(ctx context.Context, tripID, stopID string, rc *RedisClient) time
 			return propagated
 		}
 	}
-	return 0
+	return propagated
 }
 
 

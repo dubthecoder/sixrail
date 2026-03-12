@@ -54,11 +54,17 @@ func main() {
 	healthRedis := newRedisReadiness(rc)
 
 	healthPort := config.EnvOr(config.EnvPort, config.EnvOr("HEALTH_PORT", "8083"))
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", healthHandler(nc, healthRedis, lookup))
+	healthSrv := &http.Server{
+		Addr:         ":" + healthPort,
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
 	go func() {
-		mux := http.NewServeMux()
-		mux.HandleFunc("GET /health", healthHandler(nc, healthRedis, lookup))
 		slog.Info("health endpoint listening", "port", healthPort)
-		if err := http.ListenAndServe(":"+healthPort, mux); err != nil {
+		if err := healthSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("health server failed", "error", err)
 		}
 	}()
@@ -80,6 +86,11 @@ func main() {
 		select {
 		case <-ctx.Done():
 			slog.Info("shutting down realtime-poller")
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := healthSrv.Shutdown(shutdownCtx); err != nil {
+				slog.Error("health server shutdown failed", "error", err)
+			}
 			return
 		case <-ticker.C:
 			runPollCycle(ctx, mx, lookup, nc, rc, tickCount)

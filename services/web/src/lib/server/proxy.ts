@@ -11,7 +11,11 @@ function getBaseUrl(): string {
 }
 
 export function getSseUrl(): string {
-	return env.SSE_PUSH_URL || (dev ? 'http://localhost:8085' : '');
+	const url = env.SSE_PUSH_URL || (dev ? 'http://localhost:8085' : '');
+	if (!url) {
+		throw error(500, 'SSE_PUSH_URL environment variable is required in production');
+	}
+	return url;
 }
 
 export async function proxyFetch(path: string): Promise<Response> {

@@ -46,5 +46,8 @@ func (c *Client) Fetch(ctx context.Context, path string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
+	if int64(len(data)) > maxBodyBytes {
+		return nil, fmt.Errorf("response for %s exceeds %d byte limit", path, maxBodyBytes)
+	}
 	return data, nil
 }

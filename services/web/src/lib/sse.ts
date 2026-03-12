@@ -94,6 +94,7 @@ export function disconnectSSE() {
 	eventSource?.close();
 	eventSource = null;
 	sseUrl = null;
+	for (const fn of statusHandlers) fn(false);
 	handlers.clear();
 	statusHandlers.length = 0;
 }

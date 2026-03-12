@@ -18,7 +18,7 @@
 	let showDropdown = $state(false);
 	let activeIndex = $state(-1);
 
-	const listboxId = $derived(`listbox-${Math.random().toString(36).slice(2, 8)}`);
+	const listboxId = `listbox-${crypto.randomUUID().slice(0, 8)}`;
 
 	function search(q: string) {
 		value = q;

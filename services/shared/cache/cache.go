@@ -42,9 +42,9 @@ func GetJSON(ctx context.Context, client *redis.Client, key string, dest any) er
 }
 
 // SetHashJSON stores each item in items as a JSON-encoded hash field, then sets
-// an expiration on the key. Uses a pipeline for atomicity.
+// an expiration on the key. Uses a transactional pipeline for atomicity.
 func SetHashJSON[V any](ctx context.Context, client *redis.Client, key string, items map[string]V, ttl time.Duration) error {
-	pipe := client.Pipeline()
+	pipe := client.TxPipeline()
 	pipe.Del(ctx, key)
 	for field, val := range items {
 		data, err := json.Marshal(val)

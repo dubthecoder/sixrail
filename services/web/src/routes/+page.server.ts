@@ -15,6 +15,7 @@ export async function load() {
 			alerts
 		};
 	} catch (err) {
+		if (err instanceof Object && 'status' in err) throw err;
 		console.error('[SSR] Failed to load homepage data:', err);
 		throw error(503, 'Unable to load homepage data');
 	}

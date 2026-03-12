@@ -11,6 +11,7 @@ export async function load() {
 
 		return { stops };
 	} catch (err) {
+		if (err instanceof Object && 'status' in err) throw err;
 		console.error('[SSR] Failed to load departures page data:', err);
 		throw error(503, 'Unable to load departures page data');
 	}

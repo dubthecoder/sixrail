@@ -100,17 +100,6 @@ func (r *RedisClient) IsStopCancelled(ctx context.Context, tripNum, stopID strin
 	return false
 }
 
-// GetUnionDepartureByTrip finds a Union departure by trip number.
-func (r *RedisClient) GetUnionDepartureByTrip(ctx context.Context, tripNum string) (models.UnionDeparture, bool) {
-	deps := r.GetUnionDepartures(ctx)
-	for _, d := range deps {
-		if d.TripNumber == tripNum {
-			return d, true
-		}
-	}
-	return models.UnionDeparture{}, false
-}
-
 // GetUnionDepartures returns all cached Union Station departures.
 func (r *RedisClient) GetUnionDepartures(ctx context.Context) []models.UnionDeparture {
 	var deps []models.UnionDeparture
