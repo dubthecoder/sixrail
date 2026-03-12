@@ -261,7 +261,10 @@
 			<div class="flex gap-4 mt-1">
 				{#each Array(4) as _, i}
 					{#if followUpDepartures[i]}
-						<CountdownTimer scheduledTime={departureDisplayTime(followUpDepartures[i])} size="small" />
+						<CountdownTimer
+							scheduledTime={departureDisplayTime(followUpDepartures[i])}
+							size="small"
+						/>
 					{:else}
 						<CountdownTimer scheduledTime="" size="small" empty />
 					{/if}
