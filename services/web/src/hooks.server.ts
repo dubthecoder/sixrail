@@ -1,4 +1,3 @@
-import { env } from '$env/dynamic/private';
 import { error, type Handle } from '@sveltejs/kit';
 import { closeSSE, isRateLimited, openSSE } from '$lib/server/rate-limit';
 
@@ -7,16 +6,10 @@ const SSE_MAX_PER_IP = 3;
 const ALLOWED_FETCH_SITES = new Set(['same-origin', 'same-site', 'none']);
 
 function getClientIp(event: Parameters<Handle>[0]['event']): string {
-	const forwardedFor = event.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-
-	if (!env.ADDRESS_HEADER && forwardedFor) {
-		return forwardedFor.replace(/^::ffff:/, '');
-	}
-
 	try {
 		return event.getClientAddress().replace(/^::ffff:/, '');
 	} catch {
-		return forwardedFor?.replace(/^::ffff:/, '') || 'unknown';
+		return 'unknown';
 	}
 }
 
