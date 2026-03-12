@@ -20,7 +20,7 @@
 
 	function tick() {
 		if (empty) {
-			display = '00:00';
+			display = '00:00:00';
 			delayedDisplay = '';
 			return;
 		}
@@ -46,8 +46,8 @@
 	{/if}
 	<span
 		class="time font-mono tabular-nums"
-		class:text-amber-400={display !== '00:00'}
-		class:text-gray-400={display === '00:00'}
+		class:text-amber-400={display !== '00:00:00'}
+		class:text-gray-400={display === '00:00:00'}
 		class:time-small={size === 'small'}>{display}</span
 	>
 	{#if size === 'large' && delayedDisplay}

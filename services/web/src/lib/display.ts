@@ -101,14 +101,11 @@ export function formatCountdown(
 	now: ReturnType<typeof torontoNow> = torontoNow()
 ): string {
 	const diffMs = Math.max(0, departureTargetMs(hhmm, now) - now.ms);
-	const totalMins = Math.floor(diffMs / minuteMs);
-	const secs = Math.floor((diffMs % minuteMs) / 1000);
-	if (totalMins >= 60) {
-		const hrs = Math.floor(totalMins / 60);
-		const mins = totalMins % 60;
-		return `${hrs}h ${String(mins).padStart(2, '0')}m`;
-	}
-	return `${String(totalMins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+	const totalSecs = Math.floor(diffMs / 1000);
+	const hrs = Math.floor(totalSecs / 3600);
+	const mins = Math.floor((totalSecs % 3600) / 60);
+	const secs = totalSecs % 60;
+	return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
 export function padRight(str: string, len: number): string {
