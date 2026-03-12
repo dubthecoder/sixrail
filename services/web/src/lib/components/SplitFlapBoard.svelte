@@ -47,9 +47,9 @@
 	}
 
 	function boardStatusClass(d: Departure): string {
-		if (isEmpty(d)) return 'text-gray-600';
+		if (isEmpty(d)) return 'text-gray-400';
 		if (d.isCancelled || d.status === 'Cancelled') return 'text-red-500';
-		if (hasDeparted(d)) return 'text-gray-500';
+		if (hasDeparted(d)) return 'text-gray-400';
 		if (d.delayMinutes && d.delayMinutes > 0) return 'text-amber-400';
 		const s = d.status?.toUpperCase() ?? '';
 		if (s === 'PROCEED') return 'text-green-400';
@@ -141,7 +141,7 @@
 	{/each}
 
 	{#if rows.length === 0}
-		<div class="board-empty text-gray-600 font-mono text-sm py-8 text-center">
+		<div class="board-empty text-gray-400 font-mono text-sm py-8 text-center">
 			NO DEPARTURES FOUND
 		</div>
 	{/if}

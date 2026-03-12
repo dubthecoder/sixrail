@@ -120,7 +120,7 @@
 	>
 		<div class="panel-header">
 			<h2 class="font-mono text-amber-400 uppercase tracking-widest text-sm">Settings</h2>
-			<button class="close-btn font-mono text-gray-500 hover:text-white" onclick={onClose}>✕</button
+			<button class="close-btn font-mono text-gray-400 hover:text-white" onclick={onClose}>✕</button
 			>
 		</div>
 

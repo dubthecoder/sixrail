@@ -185,7 +185,7 @@
 				<p class="text-gray-400 text-xs mt-0.5">{greeting()} &middot; {dateStr()}</p>
 			</div>
 			<button
-				class="justify-self-end text-gray-500 hover:text-white text-lg leading-none p-1"
+				class="justify-self-end text-gray-400 hover:text-white text-lg leading-none p-1"
 				onclick={() => (showSettings = true)}
 				aria-label="Settings"
 			>

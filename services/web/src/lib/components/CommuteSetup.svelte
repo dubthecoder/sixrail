@@ -72,15 +72,15 @@
 		<p class="text-gray-400 text-sm font-mono text-center mb-8">Set up your commute</p>
 
 		<div class="flex items-center justify-center gap-4 mb-8 font-mono text-xs">
-			<span class={step === 1 ? 'text-amber-400' : 'text-gray-600'}>1 TO WORK</span>
+			<span class={step === 1 ? 'text-amber-400' : 'text-gray-400'}>1 TO WORK</span>
 			<span class="text-gray-700">→</span>
-			<span class={step === 2 ? 'text-amber-400' : 'text-gray-600'}>2 TO HOME</span>
+			<span class={step === 2 ? 'text-amber-400' : 'text-gray-400'}>2 TO HOME</span>
 		</div>
 
 		{#if step === 1}
 			<div class="space-y-4">
 				<div>
-					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">From</p>
+					<p class="block text-gray-400 text-xs font-mono uppercase tracking-wider mb-1">From</p>
 					<StationSearchInput
 						stops={trainStops}
 						bind:value={workOriginQuery}
@@ -91,7 +91,7 @@
 					/>
 				</div>
 				<div>
-					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">To</p>
+					<p class="block text-gray-400 text-xs font-mono uppercase tracking-wider mb-1">To</p>
 					<StationSearchInput
 						stops={trainStops}
 						bind:value={workDestQuery}
@@ -111,11 +111,11 @@
 			</div>
 		{:else}
 			<div class="space-y-4">
-				<p class="text-gray-500 text-xs font-mono mb-2">
+				<p class="text-gray-400 text-xs font-mono mb-2">
 					Pre-filled as your reverse trip. Adjust if needed.
 				</p>
 				<div>
-					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">From</p>
+					<p class="block text-gray-400 text-xs font-mono uppercase tracking-wider mb-1">From</p>
 					<StationSearchInput
 						stops={trainStops}
 						bind:value={homeOriginQuery}
@@ -126,7 +126,7 @@
 					/>
 				</div>
 				<div>
-					<p class="block text-gray-500 text-xs font-mono uppercase tracking-wider mb-1">To</p>
+					<p class="block text-gray-400 text-xs font-mono uppercase tracking-wider mb-1">To</p>
 					<StationSearchInput
 						stops={trainStops}
 						bind:value={homeDestQuery}
