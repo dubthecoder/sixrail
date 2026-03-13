@@ -15,10 +15,12 @@ describe('homepage server load', () => {
 
 	it('returns SSR data when both backend calls succeed', async () => {
 		vi.mocked(getAllStops).mockResolvedValue([{ code: 'UN', id: '1', name: 'Union' }]);
-		vi.mocked(getAlerts).mockResolvedValue([{
-			headline: 'Notice',
-			description: 'Normal service'
-		}]);
+		vi.mocked(getAlerts).mockResolvedValue([
+			{
+				headline: 'Notice',
+				description: 'Normal service'
+			}
+		]);
 
 		const url = new URL('http://localhost/');
 		await expect(load({ url } as any)).resolves.toEqual({

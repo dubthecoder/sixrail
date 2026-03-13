@@ -12,7 +12,8 @@
 		/>
 		<meta
 			property="og:url"
-			content="https://railsix.com/?from={data.urlTrip.fromCode}&to={data.urlTrip.toCode}&dir={data.urlTrip.dir}"
+			content="https://railsix.com/?from={data.urlTrip.fromCode}&to={data.urlTrip.toCode}&dir={data
+				.urlTrip.dir}"
 		/>
 	{:else}
 		<title>Rail Six</title>
