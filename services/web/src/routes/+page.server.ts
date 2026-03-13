@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 
 import { getAllStops, getAlerts } from '$lib/api';
 
-export async function load() {
+export async function load({ url }: { url: URL }) {
 	try {
 		const [stops, alerts] = await Promise.all([getAllStops(), getAlerts()]);
 
@@ -10,9 +10,37 @@ export async function load() {
 			throw error(502, 'Invalid response from departures-api');
 		}
 
+		// Parse URL trip params
+		const from = url.searchParams.get('from');
+		const to = url.searchParams.get('to');
+		const dir = url.searchParams.get('dir');
+
+		let urlTrip: {
+			fromCode: string;
+			fromName: string;
+			toCode: string;
+			toName: string;
+			dir: 'toWork' | 'toHome';
+		} | null = null;
+
+		if (from && to && (dir === 'toWork' || dir === 'toHome')) {
+			const fromStop = stops.find((s) => s.code === from);
+			const toStop = stops.find((s) => s.code === to);
+			if (fromStop && toStop) {
+				urlTrip = {
+					fromCode: fromStop.code,
+					fromName: fromStop.name,
+					toCode: toStop.code,
+					toName: toStop.name,
+					dir
+				};
+			}
+		}
+
 		return {
 			stops,
-			alerts
+			alerts,
+			urlTrip
 		};
 	} catch (err) {
 		if (err instanceof Object && 'status' in err) throw err;
