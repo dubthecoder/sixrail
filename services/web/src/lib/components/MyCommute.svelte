@@ -220,10 +220,18 @@
 	});
 
 	let mounted = $state(false);
+	let tripSyncReady = $state(false);
 	$effect(() => {
 		const trip = activeTrip;
+		const dir = activeDirection;
 		if (browser && mounted) {
 			void loadDepartures(trip);
+			// Sync URL when trip changes (e.g. after saving settings)
+			// Skip first run — initial sync handled by onMount setTimeout
+			if (tripSyncReady && !isUrlMode) {
+				syncUrl(trip, dir);
+			}
+			tripSyncReady = true;
 		}
 	});
 
