@@ -7,8 +7,10 @@ let eventSource: EventSource | null = null;
 let sseUrl: string | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let stopped = false;
+let backoff = 0;
 
-const RECONNECT_INTERVAL_MS = 5000;
+const BASE_RECONNECT_MS = 5_000;
+const MAX_RECONNECT_MS = 60_000;
 
 function notifyStatus(connected: boolean) {
 	for (const handler of statusHandlers) handler(connected);
@@ -25,7 +27,10 @@ export function onSSEStatus(handler: SSEStatusHandler): () => void {
 function createEventSource(url: string) {
 	const es = new EventSource(url);
 
-	es.onopen = () => notifyStatus(true);
+	es.onopen = () => {
+		backoff = 0;
+		notifyStatus(true);
+	};
 
 	for (const event of ['alerts', 'union-departures']) {
 		es.addEventListener(event, (e: MessageEvent) => {
@@ -44,14 +49,11 @@ function createEventSource(url: string) {
 
 	es.onerror = () => {
 		notifyStatus(false);
-		// EventSource with readyState CLOSED won't auto-reconnect (e.g. server returned
-		// non-200). Manually reconnect after a delay.
-		if (es.readyState === EventSource.CLOSED) {
-			console.warn('SSE connection closed by server, reconnecting...');
-			es.close();
-			eventSource = null;
-			scheduleReconnect();
-		}
+		// Always close and manually reconnect to prevent the browser's
+		// built-in auto-reconnect from firing rapidly with no backoff.
+		es.close();
+		eventSource = null;
+		scheduleReconnect();
 	};
 
 	return es;
@@ -59,11 +61,13 @@ function createEventSource(url: string) {
 
 function scheduleReconnect() {
 	if (stopped || reconnectTimer) return;
+	const delay = Math.min(BASE_RECONNECT_MS * 2 ** backoff, MAX_RECONNECT_MS);
+	backoff++;
 	reconnectTimer = setTimeout(() => {
 		reconnectTimer = null;
 		if (stopped || !sseUrl) return;
 		eventSource = createEventSource(sseUrl);
-	}, RECONNECT_INTERVAL_MS);
+	}, delay);
 }
 
 export function connectSSE(url: string) {
