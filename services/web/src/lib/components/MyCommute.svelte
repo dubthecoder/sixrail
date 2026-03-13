@@ -237,10 +237,13 @@
 	});
 
 	// When commute is cleared, also clear URL params so setup screen shows
+	let hadCommute = $state(false);
 	$effect(() => {
-		if (mounted && !commuteState.toWork && !commuteState.toHome) {
-			replaceState('/', {});
+		const hasCommute = !!(commuteState.toWork || commuteState.toHome);
+		if (hadCommute && !hasCommute && mounted) {
+			setTimeout(() => replaceState('/', {}), 0);
 		}
+		hadCommute = hasCommute;
 	});
 
 	// Pass empty array — AlertBanner shows all alerts when no route filter is provided
