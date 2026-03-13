@@ -176,6 +176,10 @@
 
 		commute.hydrate();
 		mounted = true;
+		// Sync URL to reflect active commute after hydrate
+		if (!isUrlMode && activeTrip) {
+			syncUrl(activeTrip, activeDirection);
+		}
 		// Departures load is handled by the $effect reacting to activeTrip after hydrate.
 		departInterval = setInterval(loadDepartures, 30_000);
 		alertInterval = setInterval(() => void loadAlerts(), ALERT_REFRESH_INTERVAL_MS);
@@ -209,9 +213,6 @@
 		const trip = activeTrip;
 		if (browser && mounted) {
 			void loadDepartures(trip);
-			if (!isUrlMode) {
-				syncUrl(trip, activeDirection);
-			}
 		}
 	});
 
@@ -276,6 +277,9 @@
 						replaceState(`/?${params}`, {});
 					} else {
 						directionOverride = 'toWork';
+						if (commuteState.toWork) {
+							syncUrl(commuteState.toWork, 'toWork');
+						}
 					}
 					track('direction-toggle', { direction: 'toWork' });
 				}}
@@ -306,6 +310,9 @@
 						replaceState(`/?${params}`, {});
 					} else {
 						directionOverride = 'toHome';
+						if (commuteState.toHome) {
+							syncUrl(commuteState.toHome, 'toHome');
+						}
 					}
 					track('direction-toggle', { direction: 'toHome' });
 				}}
