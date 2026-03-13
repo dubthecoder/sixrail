@@ -89,6 +89,19 @@
 	let nextDeparture = $derived(upcomingDepartures[0] ?? null);
 	let followUpDepartures = $derived(upcomingDepartures.slice(1, 4));
 
+	function syncUrl(
+		trip: { originCode: string; destinationCode: string } | null,
+		dir: 'toWork' | 'toHome'
+	) {
+		if (!browser || !trip) return;
+		const params = new URLSearchParams({
+			from: trip.originCode,
+			to: trip.destinationCode,
+			dir
+		});
+		replaceState(`/?${params}`, {});
+	}
+
 	let loadController: AbortController | null = null;
 
 	async function loadDepartures(trip = activeTrip) {
@@ -196,6 +209,9 @@
 		const trip = activeTrip;
 		if (browser && mounted) {
 			void loadDepartures(trip);
+			if (!isUrlMode) {
+				syncUrl(trip, activeDirection);
+			}
 		}
 	});
 
