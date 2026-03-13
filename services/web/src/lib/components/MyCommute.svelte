@@ -236,6 +236,13 @@
 		prevNext = nextDeparture;
 	});
 
+	// When commute is cleared, also clear URL params so setup screen shows
+	$effect(() => {
+		if (mounted && !commuteState.toWork && !commuteState.toHome) {
+			replaceState('/', {});
+		}
+	});
+
 	// Pass empty array — AlertBanner shows all alerts when no route filter is provided
 	// TODO: store route names in commute trips to enable route-specific filtering
 	const activeRouteNames: string[] = [];
