@@ -63,9 +63,7 @@
 	function sortByScheduledTime(deps: Departure[]): Departure[] {
 		const now = torontoNow();
 		return [...deps].sort(
-			(a, b) =>
-				departureTargetMs(departureDisplayTime(a), now) -
-				departureTargetMs(departureDisplayTime(b), now)
+			(a, b) => departureTargetMs(a.scheduledTime, now) - departureTargetMs(b.scheduledTime, now)
 		);
 	}
 
@@ -519,7 +517,7 @@
 			<div class="departure-row" class:cancelled={dep.isCancelled}>
 				<div class="flap-row-station">
 					<span class="col-time text-amber-400">
-						{#each padRight(departureDisplayTime(dep).slice(0, 5), 5).split('') as char, j}
+						{#each padRight(dep.scheduledTime.slice(0, 5), 5).split('') as char, j}
 							<SplitFlapChar value={char} delay={j * 15} />
 						{/each}
 					</span>
