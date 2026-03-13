@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount, untrack } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { commute } from '$lib/stores/commute';
 	import type { CommuteTrip } from '$lib/stores/commute';
 	import type { Stop } from '$lib/api';
@@ -89,12 +90,19 @@
 			commute.setTrip('toHome', tripFromStops(homeOrigin, homeDest));
 		}
 		track('settings-save');
+		// Navigate to the updated trip URL
+		if (workOrigin && workDest) {
+			const from = workOrigin.code || workOrigin.id;
+			const to = workDest.code || workDest.id;
+			void goto(`/?from=${from}&to=${to}&dir=toWork`, { replaceState: true, noScroll: true });
+		}
 		onClose();
 	}
 
 	function clearAll() {
 		commute.clear();
 		track('settings-clear-all');
+		void goto('/', { replaceState: true });
 		onClose();
 	}
 </script>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { replaceState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { commute, getActiveDirection } from '$lib/stores/commute';
 	import type { CommuteStore } from '$lib/stores/commute';
@@ -22,8 +22,7 @@
 
 	let { stops, alerts: initialAlerts }: { stops: Stop[]; alerts: Alert[] } = $props();
 
-	// Derive urlTrip from the actual URL — stays in sync with replaceState
-	// Match on code or id (stops may have empty code, using id as fallback)
+	// Derive urlTrip from the actual URL — the ONLY source of truth for active view
 	function findStop(stops: Stop[], val: string) {
 		return stops.find((s) => (s.code || s.id) === val);
 	}
@@ -44,26 +43,18 @@
 			dir: dir as 'toWork' | 'toHome'
 		};
 	});
-	let isUrlMode = $derived(urlTrip !== null);
 
-	let commuteState = $state<CommuteStore>({ toWork: null, toHome: null });
-	const unsubCommute = commute.subscribe((s) => (commuteState = s));
-
-	let directionOverride = $state<'toWork' | 'toHome' | null>(null);
-	let activeDirection = $derived(
-		isUrlMode ? urlTrip!.dir : getActiveDirection(directionOverride, commuteState)
-	);
 	let activeTrip = $derived.by(() => {
-		if (isUrlMode) {
-			return {
-				originCode: urlTrip!.fromCode,
-				originName: urlTrip!.fromName,
-				destinationCode: urlTrip!.toCode,
-				destinationName: urlTrip!.toName
-			};
-		}
-		return activeDirection === 'toWork' ? commuteState.toWork : commuteState.toHome;
+		if (!urlTrip) return null;
+		return {
+			originCode: urlTrip.fromCode,
+			originName: urlTrip.fromName,
+			destinationCode: urlTrip.toCode,
+			destinationName: urlTrip.toName
+		};
 	});
+	let activeDirection = $derived(urlTrip?.dir ?? 'toWork');
+
 	const ALERT_REFRESH_INTERVAL_MS = 30_000;
 
 	let departures = $state<Departure[]>([]);
@@ -97,18 +88,9 @@
 	let nextDeparture = $derived(upcomingDepartures[0] ?? null);
 	let followUpDepartures = $derived(upcomingDepartures.slice(1, 4));
 
-	function syncUrl(
-		trip: { originCode: string; destinationCode: string } | null,
-		dir: 'toWork' | 'toHome'
-	) {
-		if (!browser || !trip) return;
-		const params = new URLSearchParams({
-			from: trip.originCode,
-			to: trip.destinationCode,
-			dir
-		});
-		replaceState(`/?${params}`, {});
-	}
+	// Persistent subscription to commute store for direction toggle
+	let commuteTrips = $state<CommuteStore>({ toWork: null, toHome: null });
+	let unsubCommute: (() => void) | undefined;
 
 	let loadController: AbortController | null = null;
 
@@ -175,6 +157,8 @@
 	let unsubSSEAlerts: (() => void) | undefined;
 	let unsubSSEStatus: (() => void) | undefined;
 
+	let mounted = $state(false);
+
 	onMount(() => {
 		function refreshAlertsOnResume() {
 			if (document.visibilityState !== 'hidden') {
@@ -183,15 +167,33 @@
 		}
 
 		commute.hydrate();
-		mounted = true;
-		// Sync URL to reflect active commute after hydrate
-		// Deferred to ensure SvelteKit router is initialized before replaceState
-		setTimeout(() => {
-			if (!isUrlMode && activeTrip) {
-				syncUrl(activeTrip, activeDirection);
+
+		// Keep persistent subscription for direction toggle
+		unsubCommute = commute.subscribe((s) => (commuteTrips = s));
+
+		const hasSavedTrips = !!(commuteTrips.toWork || commuteTrips.toHome);
+
+		// If no URL params but store has saved trips, redirect to the active trip URL
+		// Delay mounted until after goto to avoid flashing CommuteSetup
+		if (!urlTrip && hasSavedTrips) {
+			const dir = getActiveDirection(null, commuteTrips);
+			const trip = dir === 'toWork' ? commuteTrips.toWork : commuteTrips.toHome;
+			if (trip) {
+				const params = new URLSearchParams({
+					from: trip.originCode,
+					to: trip.destinationCode,
+					dir
+				});
+				void goto(`/?${params}`, { replaceState: true, noScroll: true }).then(() => {
+					mounted = true;
+				});
+			} else {
+				mounted = true;
 			}
-		}, 0);
-		// Departures load is handled by the $effect reacting to activeTrip after hydrate.
+		} else {
+			mounted = true;
+		}
+
 		departInterval = setInterval(loadDepartures, 30_000);
 		alertInterval = setInterval(() => void loadAlerts(), ALERT_REFRESH_INTERVAL_MS);
 		tickInterval = setInterval(() => (tick += 1), 1000);
@@ -215,23 +217,15 @@
 			document.removeEventListener('visibilitychange', refreshAlertsOnResume);
 			unsubSSEAlerts?.();
 			unsubSSEStatus?.();
-			unsubCommute();
+			unsubCommute?.();
 		};
 	});
 
-	let mounted = $state(false);
-	let tripSyncReady = $state(false);
+	// Load departures when activeTrip changes (URL changes)
 	$effect(() => {
 		const trip = activeTrip;
-		const dir = activeDirection;
 		if (browser && mounted) {
 			void loadDepartures(trip);
-			// Sync URL when trip changes (e.g. after saving settings)
-			// Skip first run — initial sync handled by onMount setTimeout
-			if (tripSyncReady && !isUrlMode) {
-				syncUrl(trip, dir);
-			}
-			tripSyncReady = true;
 		}
 	});
 
@@ -244,24 +238,12 @@
 		prevNext = nextDeparture;
 	});
 
-	// When commute is cleared, also clear URL params so setup screen shows
-	let hadCommute = $state(false);
-	$effect(() => {
-		const hasCommute = !!(commuteState.toWork || commuteState.toHome);
-		if (hadCommute && !hasCommute && mounted) {
-			setTimeout(() => replaceState('/', {}), 0);
-		}
-		hadCommute = hasCommute;
-	});
-
 	// Pass empty array — AlertBanner shows all alerts when no route filter is provided
 	// TODO: store route names in commute trips to enable route-specific filtering
 	const activeRouteNames: string[] = [];
 </script>
 
-{#if !isUrlMode && !commuteState.toWork && !commuteState.toHome}
-	<CommuteSetup {stops} />
-{:else}
+{#if urlTrip}
 	<div
 		class="my-commute bg-surface h-[calc(100dvh-60px)] text-white font-mono px-3 py-4 flex flex-col gap-3 max-w-lg mx-auto overflow-hidden"
 	>
@@ -289,22 +271,17 @@
 				class:text-black={activeDirection === 'toWork'}
 				class:text-gray-400={activeDirection !== 'toWork'}
 				onclick={() => {
-					if (isUrlMode) {
+					const trip = commuteTrips.toWork;
+					if (trip) {
 						const params = new URLSearchParams({
-							from: urlTrip!.toCode,
-							to: urlTrip!.fromCode,
+							from: trip.originCode,
+							to: trip.destinationCode,
 							dir: 'toWork'
 						});
-						replaceState(`/?${params}`, {});
-					} else {
-						directionOverride = 'toWork';
-						if (commuteState.toWork) {
-							syncUrl(commuteState.toWork, 'toWork');
-						}
+						void goto(`/?${params}`, { replaceState: true, noScroll: true });
 					}
 					track('direction-toggle', { direction: 'toWork' });
 				}}
-				disabled={!isUrlMode && !commuteState.toWork}
 			>
 				To Work
 			</button>
@@ -314,22 +291,17 @@
 				class:text-black={activeDirection === 'toHome'}
 				class:text-gray-400={activeDirection !== 'toHome'}
 				onclick={() => {
-					if (isUrlMode) {
+					const trip = commuteTrips.toHome;
+					if (trip) {
 						const params = new URLSearchParams({
-							from: urlTrip!.toCode,
-							to: urlTrip!.fromCode,
+							from: trip.originCode,
+							to: trip.destinationCode,
 							dir: 'toHome'
 						});
-						replaceState(`/?${params}`, {});
-					} else {
-						directionOverride = 'toHome';
-						if (commuteState.toHome) {
-							syncUrl(commuteState.toHome, 'toHome');
-						}
+						void goto(`/?${params}`, { replaceState: true, noScroll: true });
 					}
 					track('direction-toggle', { direction: 'toHome' });
 				}}
-				disabled={!isUrlMode && !commuteState.toHome}
 			>
 				To Home
 			</button>
@@ -409,6 +381,8 @@
 	{#if showSettings}
 		<SettingsPanel {stops} onClose={() => (showSettings = false)} />
 	{/if}
+{:else if mounted}
+	<CommuteSetup {stops} />
 {/if}
 
 <style>

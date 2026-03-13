@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Stop } from '$lib/api';
+	import { goto } from '$app/navigation';
 	import { commute } from '$lib/stores/commute';
 	import { track } from '$lib/track';
 	import StationSearchInput from './StationSearchInput.svelte';
@@ -59,6 +60,10 @@
 			workOrigin: workOrigin.name,
 			workDest: workDest.name
 		});
+		// Navigate to the saved trip URL — URL is the single source of truth
+		const from = workOrigin.code || workOrigin.id;
+		const to = workDest.code || workDest.id;
+		void goto(`/?from=${from}&to=${to}&dir=toWork`, { replaceState: true });
 	}
 </script>
 
