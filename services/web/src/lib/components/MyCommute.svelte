@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { replaceState } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { commute, getActiveDirection } from '$lib/stores/commute';
 	import type { CommuteStore } from '$lib/stores/commute';
 	import type { Stop } from '$lib/api';
@@ -24,9 +24,9 @@
 
 	// Derive urlTrip from the actual URL — stays in sync with replaceState
 	let urlTrip = $derived.by(() => {
-		const from = $page.url.searchParams.get('from');
-		const to = $page.url.searchParams.get('to');
-		const dir = $page.url.searchParams.get('dir');
+		const from = page.url.searchParams.get('from');
+		const to = page.url.searchParams.get('to');
+		const dir = page.url.searchParams.get('dir');
 		if (!from || !to || (dir !== 'toWork' && dir !== 'toHome')) return null;
 		const fromStop = stops.find((s) => s.code === from);
 		const toStop = stops.find((s) => s.code === to);
