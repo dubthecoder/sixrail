@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 
 import { getAllStops, getAlerts } from '$lib/api';
+import { stopToDisplayName } from '$lib/stations';
 
 export async function load({ url }: { url: URL }) {
 	try {
@@ -29,9 +30,9 @@ export async function load({ url }: { url: URL }) {
 			if (fromStop && toStop) {
 				urlTrip = {
 					fromCode: fromStop.code || fromStop.id,
-					fromName: fromStop.name,
+					fromName: stopToDisplayName(fromStop),
 					toCode: toStop.code || toStop.id,
-					toName: toStop.name,
+					toName: stopToDisplayName(toStop),
 					dir
 				};
 			}

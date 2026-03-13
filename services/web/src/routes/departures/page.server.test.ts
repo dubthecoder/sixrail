@@ -8,7 +8,7 @@ describe('departures redirect', () => {
 		try {
 			load();
 		} catch (e) {
-			expect(e).toMatchObject({ status: 302, location: '/departures/union' });
+			expect(e).toMatchObject({ status: 301, location: '/departures/union' });
 		}
 	});
 });

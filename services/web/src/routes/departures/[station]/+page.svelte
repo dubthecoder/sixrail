@@ -8,7 +8,7 @@
 		type NetworkLine
 	} from '$lib/api-client';
 	import type { Stop } from '$lib/api';
-	import { stopToSlug } from '$lib/stations';
+	import { stopToSlug, stopToDisplayName, stopToSeoName } from '$lib/stations';
 	import SplitFlapChar from '$lib/components/SplitFlapChar.svelte';
 	import {
 		departureDisplayTime,
@@ -49,8 +49,18 @@
 		data.stops.find((s) => (s.code || s.id) === data.stationCode)?.name ?? ''
 	);
 
-	// Strip trailing " GO" for use in meta titles to avoid "Aurora GO GO Train Departures"
-	let stationDisplayName = $derived(selectedStopName.replace(/\s+GO$/i, '') || 'Union Station');
+	// Display name with GO Transit boilerplate stripped, for use in meta tags
+	let stationDisplayName = $derived(
+		selectedStopName ? stopToDisplayName({ name: selectedStopName } as Stop) : 'Union Station'
+	);
+
+	// SEO-optimized name: overrides for naming-rights stations and geographic aliases
+	// (e.g. "Durham College Oshawa" → "Oshawa", "West Harbour" → "West Harbour (Hamilton)")
+	let seoStationName = $derived(
+		data.stops.find((s) => (s.code || s.id) === data.stationCode)
+			? stopToSeoName(data.stops.find((s) => (s.code || s.id) === data.stationCode)!)
+			: stationDisplayName
+	);
 
 	let isNonUnion = $derived(data.stationSlug !== 'union');
 
@@ -244,22 +254,23 @@
 </script>
 
 <svelte:head>
-	<title>{stationDisplayName} GO Train Departures — Live Schedule | Rail Six</title>
+	<title>{seoStationName} GO Train Departures — Live Schedule | Rail Six</title>
 	<meta
 		name="description"
-		content="Live GO Train departures from {stationDisplayName}. Real-time schedule, platform assignments, and delay alerts. Free — no account, no ads, no tracking."
+		content="Live GO Train departures from {seoStationName}. Real-time schedule, platform assignments, and delay alerts. Free — no account, no ads, no tracking."
 	/>
 	<meta
 		name="keywords"
-		content="GO Train departures {stationDisplayName}, {stationDisplayName} GO train schedule, GO train platform, GO Transit real time, GO train delay, GTA train tracker, Toronto GO Transit"
+		content="{seoStationName} GO train schedule, {seoStationName} GO train times, {seoStationName} GO train departures, {seoStationName} GO station, {stationDisplayName} GO train, GO Transit {seoStationName}, GO train real time {seoStationName}, GTA train tracker, Toronto GO Transit"
 	/>
+	<link rel="canonical" href="https://railsix.com/departures/{data.stationSlug}" />
 	<meta
 		property="og:title"
-		content="{stationDisplayName} GO Train Departures — Live Schedule | Rail Six"
+		content="{seoStationName} GO Train Departures — Live Schedule | Rail Six"
 	/>
 	<meta
 		property="og:description"
-		content="Live GO Train departures from {stationDisplayName}. Real-time schedule, platform assignments, and delay alerts."
+		content="Live GO Train departures from {seoStationName}. Real-time schedule, platform assignments, and delay alerts."
 	/>
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="Rail Six" />
@@ -267,13 +278,14 @@
 	<meta property="og:image" content="https://railsix.com/og-image.png" />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="Rail Six — GO Train departure board" />
 	<meta name="robots" content="index, follow" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:site" content="@railsix" />
-	<meta name="twitter:title" content="{stationDisplayName} GO Train Departures — Rail Six" />
+	<meta name="twitter:title" content="{seoStationName} GO Train Departures — Rail Six" />
 	<meta
 		name="twitter:description"
-		content="Live GO Train departures from {stationDisplayName}. Real-time schedule, platform info, and delay alerts. Free, no account."
+		content="Live GO Train departures from {seoStationName}. Real-time schedule, platform info, and delay alerts. Free, no account."
 	/>
 	<meta name="twitter:image" content="https://railsix.com/og-image.png" />
 </svelte:head>
